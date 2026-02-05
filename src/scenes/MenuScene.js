@@ -1,4 +1,5 @@
 import { CONFIG, GameState } from '../utils/Config.js';
+import { Lang } from '../utils/Lang.js';
 
 export class MenuScene extends Phaser.Scene {
     constructor() {
@@ -6,9 +7,22 @@ export class MenuScene extends Phaser.Scene {
     }
 
     create() {
+        this.createUI();
+        this.scale.on('resize', this.resize, this);
+    }
+
+    resize(gameSize) {
+        this.createUI();
+    }
+
+    createUI() {
+        // Clear existing UI
+        this.children.removeAll();
+
         const { width, height } = this.scale;
         const centerX = width / 2;
         const centerY = height / 2;
+        const strings = Lang[GameState.lang];
 
         // Background
         this.add.rectangle(0, 0, width, height, 0x111111).setOrigin(0);
@@ -23,13 +37,13 @@ export class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // High Score
-        this.add.text(centerX, centerY - 120, `High Score: ${GameState.highScore}`, {
+        this.add.text(centerX, centerY - 120, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
             font: '32px Arial',
             fill: '#ffff00'
         }).setOrigin(0.5);
 
         // Difficulty Selection
-        this.add.text(centerX, centerY - 50, 'Select Difficulty:', {
+        this.add.text(centerX, centerY - 50, strings.SELECT_DIFFICULTY, {
             font: '24px Arial',
             fill: '#aaaaaa'
         }).setOrigin(0.5);
@@ -37,7 +51,7 @@ export class MenuScene extends Phaser.Scene {
         this.createDifficultyButtons(centerX, centerY);
 
         // Volume Settings
-        this.volumeText = this.add.text(centerX, centerY + 150, `Volume: ${GameState.volume}%`, {
+        this.volumeText = this.add.text(centerX, centerY + 150, `${strings.VOLUME}: ${GameState.volume}%`, {
             font: '24px Arial',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -47,10 +61,10 @@ export class MenuScene extends Phaser.Scene {
         this.volumeText.on('pointerout', () => this.volumeText.setFill('#aaaaaa'));
 
         // Start Button
-        const startBtn = this.add.rectangle(centerX, centerY + 250, 200, 60, 0x00ff00)
+        const startBtn = this.add.rectangle(centerX, centerY + 250, 300, 60, 0x00ff00)
             .setInteractive({ useHandCursor: true });
         
-        const startText = this.add.text(centerX, centerY + 250, 'START GAME', {
+        const startText = this.add.text(centerX, centerY + 250, strings.START_GAME, {
             font: '28px Arial',
             fill: '#000000',
             fontStyle: 'bold'
@@ -59,11 +73,25 @@ export class MenuScene extends Phaser.Scene {
         startBtn.on('pointerover', () => startBtn.setFillStyle(0x00dd00));
         startBtn.on('pointerout', () => startBtn.setFillStyle(0x00ff00));
         startBtn.on('pointerdown', () => this.startGame());
+
+        // Language Toggle (Bottom Right)
+        const langText = GameState.lang.toUpperCase();
+        const langBtn = this.add.text(width - 50, height - 50, langText, {
+            font: '32px Arial',
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(1, 1).setInteractive({ useHandCursor: true });
+
+        langBtn.on('pointerdown', () => this.toggleLang());
+        langBtn.on('pointerover', () => langBtn.setFill('#ffff00'));
+        langBtn.on('pointerout', () => langBtn.setFill('#ffffff'));
     }
 
     createDifficultyButtons(x, y) {
         const diffs = Object.keys(CONFIG.DIFFICULTY);
         const startY = y;
+        const strings = Lang[GameState.lang];
         
         this.diffButtons = [];
 
@@ -78,7 +106,7 @@ export class MenuScene extends Phaser.Scene {
             const bg = this.add.rectangle(btnX, btnY, 140, 50, isSelected ? 0x00aaaa : 0x333333)
                 .setInteractive({ useHandCursor: true });
             
-            const text = this.add.text(btnX, btnY, diff.name, {
+            const text = this.add.text(btnX, btnY, strings['DIFF_' + key], {
                 font: '20px Arial',
                 fill: '#ffffff'
             }).setOrigin(0.5);
@@ -111,7 +139,14 @@ export class MenuScene extends Phaser.Scene {
         else vol = 100;
 
         GameState.saveVolume(vol);
-        this.volumeText.setText(`Volume: ${vol}%`);
+        const strings = Lang[GameState.lang];
+        this.volumeText.setText(`${strings.VOLUME}: ${vol}%`);
+    }
+
+    toggleLang() {
+        const newLang = GameState.lang === 'en' ? 'ru' : 'en';
+        GameState.saveLang(newLang);
+        this.createUI(); // Re-render with new language
     }
 
     startGame() {

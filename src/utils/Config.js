@@ -121,6 +121,7 @@ export const CONFIG = {
         },
         {
             id: 'max_hp',
+            langKey: 'TITAN_HEALTH',
             name: 'Titan Health',
             description: 'Max HP +20',
             apply: (player) => { player.maxHp += 20; player.hp += 20; }
@@ -177,6 +178,7 @@ export const GameState = {
     difficulty: CONFIG.DIFFICULTY.NORMAL,
     highScore: parseInt(localStorage.getItem('arcade_highscore')) || 0,
     volume: parseInt(localStorage.getItem('arcade_volume')) || 100,
+    lang: localStorage.getItem('arcade_lang') || 'en',
     
     saveHighScore(score) {
         if (score > this.highScore) {
@@ -188,5 +190,10 @@ export const GameState = {
     saveVolume(volume) {
         this.volume = volume;
         localStorage.setItem('arcade_volume', volume);
+    },
+
+    saveLang(lang) {
+        this.lang = lang;
+        localStorage.setItem('arcade_lang', lang);
     }
 };

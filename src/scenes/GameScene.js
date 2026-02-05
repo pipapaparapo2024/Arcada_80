@@ -1,6 +1,7 @@
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { CONFIG, GameState } from '../utils/Config.js';
+import { Lang } from '../utils/Lang.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -8,6 +9,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // Localization
+        this.lang = Lang[GameState.lang];
+
         // CRT Shader
         if (this.game.renderer.pipelines && this.game.renderer.pipelines.has('CRTPipeline')) {
             this.cameras.main.setPostPipeline('CRTPipeline');
@@ -16,17 +20,19 @@ export class GameScene extends Phaser.Scene {
         // Apply difficulty settings
         this.difficulty = GameState.difficulty;
         
-        // World bounds
+        // World bounds - Keep fixed game world or adapt?
+        // For an arcade shooter, usually a fixed arena is better, but user said "adaptive".
+        // Let's keep the logical world bounds fixed (1600x1200) but allow the camera to see what fits.
         this.physics.world.setBounds(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
         this.physics.world.on('worldbounds', this.handleBulletHitWorld, this);
         
         // Parallax Background
         this.starsBg = this.add.tileSprite(
-            CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT, 'background'
+            this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 'background'
         ).setScrollFactor(0).setAlpha(0.5).setDepth(-2);
 
         this.background = this.add.tileSprite(
-            CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT, 'background'
+            this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 'background'
         ).setScrollFactor(0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.3).setDepth(-1);
         
         // Player
@@ -88,23 +94,87 @@ export class GameScene extends Phaser.Scene {
         // UI
         this.createUI();
 
-        // Keyboard
+        // Pause System
+        this.isPaused = false;
+        this.createPauseUI();
+
+        // Keyboard & Input
         this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-        this.events.on('resume', () => this.input.keyboard.resetKeys());
+        this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+        this.game.events.on('blur', () => this.togglePause(true));
+        
+        // Events
+        this.events.on('resume', () => {
+            this.input.keyboard.resetKeys();
+            // Resuming from another scene (like LevelUp)
+        });
+        
+        this.scale.on('resize', this.resize, this);
 
         // Sound Effects
         this.shootSound = this.sound.add('shoot', { volume: GameState.volume / 100 });
         this.explosionSound = this.sound.add('explosion', { volume: GameState.volume / 100 });
+    }
+
+    createPauseUI() {
+        const { width, height } = this.scale;
         
-        this.player.on('shoot', () => {
-            // Player handles sound via Weapon, or here if Weapon triggers it. 
-            // Weapon triggers sound itself in our implementation.
-            // But if we want global volume control applied dynamically...
-            // Weapon uses this.scene.volume, so it's fine.
-        });
+        this.pauseGroup = this.add.container(width/2, height/2).setDepth(2000).setVisible(false).setScrollFactor(0);
+        
+        this.pauseOverlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
+        
+        const pauseText = this.add.text(0, -50, this.lang.PAUSE, {
+            font: '64px Arial', fill: '#ffffff', stroke: '#000000', strokeThickness: 6
+        }).setOrigin(0.5);
+        
+        const pauseSub = this.add.text(0, 50, this.lang.PAUSE_SUB, {
+            font: '32px Arial', fill: '#cccccc', stroke: '#000000', strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        this.pauseGroup.add([this.pauseOverlay, pauseText, pauseSub]);
+    }
+
+    togglePause(forcePause = false) {
+        if (this.isGameOver) return;
+        
+        // If forcePause is true, we only pause, don't toggle to unpause
+        if (forcePause && this.isPaused) return;
+
+        this.isPaused = !this.isPaused;
+
+        if (this.isPaused) {
+            this.physics.pause();
+            this.time.paused = true; // Pause game time events
+            this.pauseGroup.setVisible(true);
+            
+            // Add resume listener with a small delay to avoid instant resume
+            setTimeout(() => {
+                if (this.isPaused) {
+                    const resumeHandler = () => {
+                        this.resumeGame();
+                        this.input.keyboard.off('keydown', resumeHandler);
+                        this.input.off('pointerdown', resumeHandler);
+                    };
+                    this.input.keyboard.once('keydown', resumeHandler);
+                    this.input.once('pointerdown', resumeHandler);
+                }
+            }, 200);
+        } else {
+            this.resumeGame();
+        }
+    }
+
+    resumeGame() {
+        if (!this.isPaused) return;
+        this.isPaused = false;
+        this.physics.resume();
+        this.time.paused = false;
+        this.pauseGroup.setVisible(false);
     }
 
     update(time, delta) {
+        if (this.isPaused) return;
+
         if (this.isGameOver) {
             if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
                 this.scene.restart();
@@ -141,11 +211,11 @@ export class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // Ammo
-        this.ammoText = this.add.text(10, 10, `Ammo: ${CONFIG.PLAYER.AMMO_MAX}`, { 
+        this.ammoText = this.add.text(10, 10, `${this.lang.AMMO}: ${CONFIG.PLAYER.AMMO_MAX}`, { 
             font: '24px Arial', fill: '#ffffff', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
         
-        this.reloadText = this.add.text(width/2, height/2, 'RELOADING...', { 
+        this.reloadText = this.add.text(width/2, height/2, this.lang.RELOADING, { 
             font: '32px Arial', fill: '#ff0000', stroke: '#000000', strokeThickness: 3 
         }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
 
@@ -155,7 +225,7 @@ export class GameScene extends Phaser.Scene {
         }).setScrollFactor(0);
 
         // Score
-        this.scoreText = this.add.text(10, 70, 'Score: 0', { 
+        this.scoreText = this.add.text(10, 70, `${this.lang.SCORE}: 0`, { 
             font: '24px Arial', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
 
@@ -168,28 +238,70 @@ export class GameScene extends Phaser.Scene {
         const barY = height - 30;
         this.xpBarBg = this.add.rectangle(width/2, barY, width - 40, 20, 0x000000).setScrollFactor(0).setStrokeStyle(2, 0x333333);
         this.xpBarFill = this.add.rectangle(20, barY, 0, 20, 0x00ffff).setScrollFactor(0).setOrigin(0, 0.5);
-        this.levelText = this.add.text(width/2, barY - 25, 'Level 1', {
+        this.levelText = this.add.text(width/2, barY - 25, `${this.lang.LEVEL} 1`, {
             font: '20px Arial', fill: '#00ffff', stroke: '#000000', strokeThickness: 4
         }).setScrollFactor(0).setOrigin(0.5);
 
         // Game Over
-        this.gameOverText = this.add.text(width/2, height/2, 'GAME OVER\nPress R to Restart', { 
+        this.gameOverText = this.add.text(width/2, height/2, this.lang.GAME_OVER, { 
             font: '48px Arial', fill: '#ff0000', align: 'center', stroke: '#000000', strokeThickness: 4
         }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
 
         // Listeners
-        this.player.on('ammoChanged', (ammo) => this.ammoText.setText(`Ammo: ${ammo}/${CONFIG.PLAYER.AMMO_MAX}`));
+        this.player.on('ammoChanged', (ammo) => this.ammoText.setText(`${this.lang.AMMO}: ${ammo}/${CONFIG.PLAYER.AMMO_MAX}`));
         this.player.on('reloadStart', () => this.reloadText.setVisible(true));
         this.player.on('reloadComplete', () => this.reloadText.setVisible(false));
         this.player.on('hpChanged', (hp, max) => this.hpText.setText(`HP: ${Math.ceil(hp)}`));
         this.player.on('xpChanged', (xp, next, level) => {
-            const percent = Phaser.Math.Clamp(xp / next, 0, 1);
-            this.xpBarFill.width = (width - 40) * percent;
-            this.levelText.setText(`Level ${level}`);
+            this.currentXpPercent = Phaser.Math.Clamp(xp / next, 0, 1);
+            this.xpBarFill.width = (this.scale.width - 40) * this.currentXpPercent;
+            this.levelText.setText(`${this.lang.LEVEL} ${level}`);
         });
         
         // Init UI
+        this.currentXpPercent = 0;
         this.player.emit('xpChanged', 0, CONFIG.XP.BASE_REQ, 1);
+    }
+
+    resize(gameSize) {
+        const { width, height } = gameSize;
+
+        // Camera
+        this.cameras.main.setViewport(0, 0, width, height);
+
+        // Backgrounds
+        this.starsBg.setPosition(width/2, height/2).setSize(width, height);
+        this.background.setPosition(width/2, height/2).setSize(width, height);
+        
+        // Danger Zone
+        this.updateDangerZone(false); // Clear and reset size (it will redraw on next update if active)
+
+        // UI
+        if (this.ammoText) this.ammoText.setPosition(10, 10);
+        if (this.hpText) this.hpText.setPosition(10, 40);
+        if (this.scoreText) this.scoreText.setPosition(10, 70);
+        if (this.comboText) this.comboText.setPosition(10, 100);
+        
+        if (this.reloadText) this.reloadText.setPosition(width/2, height/2);
+        if (this.gameOverText) this.gameOverText.setPosition(width/2, height/2);
+        
+        // XP Bar
+        const barY = height - 30;
+        if (this.xpBarBg) {
+             this.xpBarBg.setPosition(width/2, barY);
+             this.xpBarBg.width = width - 40;
+        }
+        if (this.xpBarFill) {
+             this.xpBarFill.setPosition(20, barY);
+             this.xpBarFill.width = (width - 40) * this.currentXpPercent;
+        }
+        if (this.levelText) this.levelText.setPosition(width/2, barY - 25);
+
+        // Pause UI
+        if (this.pauseGroup) {
+             this.pauseOverlay.setSize(width, height);
+             this.pauseGroup.setPosition(width/2, height/2);
+        }
     }
     
     updateDangerZone(active) {
@@ -205,7 +317,7 @@ export class GameScene extends Phaser.Scene {
 
     updateComboUI() {
         if (this.combo > 0) {
-            this.comboText.setText(`Combo x${this.comboMultiplier} (${Math.ceil(this.comboTimer/100)})`);
+            this.comboText.setText(`${this.lang.COMBO} x${this.comboMultiplier} (${Math.ceil(this.comboTimer/100)})`);
             this.comboText.setScale(1 + (this.comboMultiplier * 0.1));
         } else {
             this.comboText.setText('');
@@ -219,7 +331,7 @@ export class GameScene extends Phaser.Scene {
         const newMult = 1 + Math.floor(this.combo / CONFIG.COMBO.MULTIPLIER_STEP);
         if (newMult > this.comboMultiplier) {
             this.comboMultiplier = newMult;
-            const text = this.add.text(this.scale.width/2, 200, `${this.comboMultiplier}x COMBO!`, {
+            const text = this.add.text(this.scale.width/2, 200, `${this.comboMultiplier}x ${this.lang.COMBO}!`, {
                 font: '64px Arial', fill: '#ffff00', stroke: '#ff0000', strokeThickness: 6
             }).setOrigin(0.5).setScrollFactor(0);
             
@@ -238,7 +350,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     spawnEnemy() {
-        if (this.isGameOver) return;
+        if (this.isGameOver || this.isPaused) return;
 
         const enemy = this.enemies.get();
         if (enemy) {
@@ -266,7 +378,7 @@ export class GameScene extends Phaser.Scene {
         this.baseEnemySpeedMultiplier *= 1.05;
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         
-        const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, 'LEVEL UP: ENEMIES FASTER!', { 
+        const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, this.lang.BOSS_WARNING, { 
             font: '50px Arial', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
         }).setOrigin(0.5).setScrollFactor(0);
         
@@ -298,7 +410,7 @@ export class GameScene extends Phaser.Scene {
             enemy.setPosition(-200, -200);
             
             this.score += enemy.config.score * this.difficulty.scoreMult * this.comboMultiplier;
-            this.scoreText.setText(`Score: ${Math.floor(this.score)}`);
+            this.scoreText.setText(`${this.lang.SCORE}: ${Math.floor(this.score)}`);
             this.increaseCombo();
             
             this.player.gainXp(CONFIG.XP.ORB_VALUE);
