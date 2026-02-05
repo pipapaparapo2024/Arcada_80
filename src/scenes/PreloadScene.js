@@ -6,6 +6,17 @@ export class PreloadScene extends Phaser.Scene {
     preload() {
         console.log('PreloadScene started');
         
+        // Fix CORS issues
+        this.load.crossOrigin = 'anonymous';
+        this.load.baseURL = ''; // Ensure no double base path issues
+
+        // Handle loading errors
+        this.load.on('loaderror', (file) => {
+            console.error('Asset load failed:', file.key, file.src);
+            // We'll generate fallbacks in create() or GameScene if needed,
+            // but logging is critical for debugging.
+        });
+
         // Load Images
         this.load.image('player', 'https://labs.phaser.io/assets/sprites/ship.png');
         this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullets/bullet1.png');
@@ -25,6 +36,12 @@ export class PreloadScene extends Phaser.Scene {
         xpGfx.fillStyle(0x00ffff, 1);
         xpGfx.fillCircle(8, 8, 8); // 16x16 circle
         xpGfx.generateTexture('xp_orb', 16, 16);
+
+        // Shockwave Texture
+        const swGfx = this.make.graphics({ x: 0, y: 0, add: false });
+        swGfx.lineStyle(4, 0xffffff, 1);
+        swGfx.strokeCircle(32, 32, 30);
+        swGfx.generateTexture('shockwave', 64, 64);
     }
 
     create() {

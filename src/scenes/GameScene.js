@@ -12,6 +12,27 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // Safety Check: Ensure critical assets exist
+        const criticalTextures = ['player', 'bullet', 'enemy_chaser', 'enemy_sprinter', 'background', 'spark', 'fire', 'xp_orb'];
+        criticalTextures.forEach(key => {
+            if (!this.textures.exists(key)) {
+                console.warn(`Texture '${key}' missing! Generating placeholder.`);
+                const gfx = this.make.graphics({x:0, y:0, add:false});
+                gfx.fillStyle(0xff00ff, 1);
+                gfx.fillRect(0, 0, 32, 32);
+                gfx.generateTexture(key, 32, 32);
+            }
+        });
+
+        // Safety Check: Ensure audio assets exist
+        const criticalAudio = ['shoot', 'explosion', 'bgm'];
+        criticalAudio.forEach(key => {
+            if (!this.cache.audio.exists(key)) {
+                console.warn(`Audio '${key}' missing! Disabling sound for this key.`);
+                // Create a dummy sound object if needed, or just handle it in usage
+            }
+        });
+
         // Localization
         this.lang = Lang[GameState.lang];
 
@@ -143,9 +164,19 @@ export class GameScene extends Phaser.Scene {
 
         // Sound Effects (Safe Volume)
         const vol = (GameState.volume || 0) / 100;
-        this.shootSound = this.sound.add('shoot', { volume: vol });
-        this.explosionSound = this.sound.add('explosion', { volume: vol });
-        this.bgm = this.sound.add('bgm', { volume: vol * 0.5, loop: true });
+        
+        // Safe Audio Adding
+        const addSoundSafe = (key, config) => {
+            if (this.cache.audio.exists(key)) {
+                return this.sound.add(key, config);
+            }
+            return { play: () => {}, stop: () => {} }; // Dummy sound object
+        };
+
+        this.shootSound = addSoundSafe('shoot', { volume: vol });
+        this.explosionSound = addSoundSafe('explosion', { volume: vol });
+        this.bgm = addSoundSafe('bgm', { volume: vol * 0.5, loop: true });
+        
         if (GameState.volume > 0) {
             this.bgm.play();
         }
@@ -521,6 +552,18 @@ export class GameScene extends Phaser.Scene {
             this.cameras.main.shake(100, 0.005);
             this.particleEmitter.emitParticleAt(enemy.x, enemy.y, 10);
             
+            // Shockwave Effect
+            const shockwave = this.add.image(enemy.x, enemy.y, 'shockwave');
+            shockwave.setBlendMode('ADD');
+            shockwave.setAlpha(0.8);
+            this.tweens.add({
+                targets: shockwave,
+                scale: 3,
+                alpha: 0,
+                duration: 300,
+                onComplete: () => shockwave.destroy()
+            });
+
             // Chance to drop powerup
             if (Math.random() < 0.1) { // 10% chance
                 const powerup = this.powerups.get();
