@@ -8,11 +8,11 @@ export class MenuScene extends Phaser.Scene {
 
     create() {
         this.createUI();
-        this.scale.on('resize', this.resize, this);
+        // this.scale.on('resize', this.resize, this);
     }
 
     resize(gameSize) {
-        this.createUI();
+        // this.createUI();
     }
 
     createUI() {

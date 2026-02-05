@@ -139,7 +139,7 @@ export class GameScene extends Phaser.Scene {
             this.input.keyboard.resetKeys();
         });
         
-        this.scale.on('resize', this.resize, this);
+        // this.scale.on('resize', this.resize, this);
 
         // Sound Effects (Safe Volume)
         const vol = (GameState.volume || 0) / 100;
@@ -541,9 +541,11 @@ export class GameScene extends Phaser.Scene {
 
     handlePlayerHitOrb(player, orb) {
         if (!orb.active) return;
-        orb.collect();
-        player.gainXp(orb.value);
-        // Play XP sound
+        const value = orb.collect();
+        if (value > 0) {
+            player.gainXp(value);
+            // Play XP sound
+        }
     }
 
     spawnBoss() {
@@ -565,25 +567,6 @@ export class GameScene extends Phaser.Scene {
                 onComplete: () => text.destroy()
             });
         }
-    }
-
-    handleAbilityUsed(ability) {
-        // Handle ability visual effects or logic
-        // e.g., if ability is 'shield', show shield sprite
-    }
-
-    triggerLevelUp() {
-        this.scene.pause();
-        this.scene.launch('LevelUpScene', { 
-            player: this.player 
-        });
-    }
-
-    gameOver() {
-        this.isGameOver = true;
-        this.physics.pause();
-        this.gameOverText.setVisible(true);
-        this.gameOverText.setText(`${this.lang.GAME_OVER}\n${this.lang.SCORE}: ${Math.floor(this.score)}\n${this.lang.PRESS_R}`);
     }
 
     handleEnemyBulletHitPlayer(player, bullet) {
@@ -680,6 +663,7 @@ export class GameScene extends Phaser.Scene {
         this.physics.pause();
         this.player.setTint(0x555555);
         this.gameOverText.setVisible(true);
+        this.gameOverText.setText(`${this.lang.GAME_OVER}\n${this.lang.SCORE}: ${Math.floor(this.score)}\n${this.lang.PRESS_R}`);
         GameState.saveHighScore(Math.floor(this.score));
     }
 }
