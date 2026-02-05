@@ -8,7 +8,7 @@ const config = {
     type: Phaser.AUTO,
     width: 1600,
     height: 1200,
-    parent: document.body,
+    parent: 'game-container',
     backgroundColor: '#000000',
     scene: [BootScene, PreloadScene, MenuScene, GameScene, LevelUpScene],
     physics: {

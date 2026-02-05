@@ -1,5 +1,7 @@
 import { Player } from '../entities/Player.js';
-import { Enemy } from '../entities/Enemy.js';
+import { Enemy, ENEMY_TYPES } from '../entities/Enemy.js';
+import { Powerup } from '../entities/Powerup.js';
+import { Bullet } from '../entities/Bullet.js';
 import { CONFIG, GameState } from '../utils/Config.js';
 import { Lang } from '../utils/Lang.js';
 
@@ -40,8 +42,12 @@ export class GameScene extends Phaser.Scene {
         
         // Danger Zone Warning Overlay
         this.dangerOverlay = this.add.graphics();
-        this.dangerOverlay.setScrollFactor(0);
+        this.dangerOverlay.setScrollFactor(1); // World space
         this.dangerOverlay.setDepth(100);
+        
+        // Draw the boundary permanently so player knows where it is
+        this.drawWorldBounds();
+        
         this.player.on('dangerZone', (active) => this.updateDangerZone(active));
         this.player.on('abilityUsed', (ability) => this.handleAbilityUsed(ability));
         
@@ -62,6 +68,19 @@ export class GameScene extends Phaser.Scene {
             classType: Enemy,
             runChildUpdate: true,
             maxSize: 100
+        });
+
+        // Enemy Bullets Group
+        this.enemyBullets = this.physics.add.group({
+            classType: Bullet,
+            runChildUpdate: true,
+            maxSize: 50
+        });
+
+        // Powerups Group
+        this.powerups = this.physics.add.group({
+            classType: Powerup,
+            runChildUpdate: false // Powerups use tween/timer
         });
 
         // Particle Manager
@@ -90,7 +109,13 @@ export class GameScene extends Phaser.Scene {
         // Collisions
         this.physics.add.overlap(this.player.bullets, this.enemies, this.handleBulletHitEnemy, null, this);
         this.physics.add.overlap(this.player, this.enemies, this.handleEnemyOverlap, null, this); 
-
+        this.physics.add.overlap(this.player, this.powerups, this.handlePlayerHitPowerup, null, this);
+        this.physics.add.overlap(this.player, this.enemyBullets, this.handleEnemyBulletHitPlayer, null, this);
+        this.physics.world.on('worldbounds', this.handleBulletHitWorld, this); // Re-binding listener if needed, but it's already bound earlier. 
+        // Actually, enemy bullets might also hit world bounds.
+        // We need to ensure 'worldbounds' event is fired for enemy bullets too.
+        // In Bullet.js we set collideWorldBounds(false) by default but we check manually in preUpdate.
+        
         // UI
         this.createUI();
 
@@ -114,6 +139,22 @@ export class GameScene extends Phaser.Scene {
         // Sound Effects
         this.shootSound = this.sound.add('shoot', { volume: GameState.volume / 100 });
         this.explosionSound = this.sound.add('explosion', { volume: GameState.volume / 100 });
+        this.bgm = this.sound.add('bgm', { volume: GameState.volume / 100 * 0.5, loop: true });
+        if (GameState.volume > 0) {
+            this.bgm.play();
+        }
+
+        // Engine Trail
+        this.trailEmitter = this.add.particles(0, 0, 'fire', {
+            speed: { min: 50, max: 100 },
+            lifespan: 300,
+            scale: { start: 0.4, end: 0 },
+            alpha: { start: 0.6, end: 0 },
+            blendMode: 'ADD',
+            frequency: 50,
+            angle: { min: 0, max: 360 } // Initial spray, updated in update
+        });
+        this.trailEmitter.startFollow(this.player);
     }
 
     createPauseUI() {
@@ -176,13 +217,42 @@ export class GameScene extends Phaser.Scene {
         if (this.isPaused) return;
 
         if (this.isGameOver) {
+            this.trailEmitter.stop(); // Stop trail on death
             if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
+                this.bgm.stop();
                 this.scene.restart();
             }
             return;
         }
 
         this.player.update(time, delta);
+        
+        // Update Trail
+        // Calculate offset based on player rotation (engine is at the back)
+        const rad = this.player.rotation;
+        const offset = 30; // Distance behind ship
+        const offX = Math.cos(rad) * -offset;
+        const offY = Math.sin(rad) * -offset;
+        
+        // Update follow offset so particles emit from the engine
+        this.trailEmitter.followOffset.set(offX, offY);
+        
+        // Direct particles opposite to player rotation
+        // angle property in emitter config is absolute, so we set it here
+        // We want particles to shoot BACKWARDS relative to ship
+        // Ship faces 'rad', so backwards is rad + PI
+        // Particle emitter angle is in degrees usually for the config object, but setAngle might take degrees?
+        // setAngle takes value? Phaser 3 docs: emitter.angle is a property? No, it's an Ops.
+        // We probably need to update the processor?
+        // Actually, just setting the emitter to follow and offset is enough for position.
+        // For direction, if speed > 0, they fly out.
+        // If we want them to fly OUT from the engine in a cone, we set angle.
+        // The 'angle' property in config can be a number or object.
+        // To update it runtime:
+        // this.trailEmitter.setAngle({ min: ..., max: ... })?
+        // Or just:
+        // this.trailEmitter.angle.start = ...
+        // Let's keep it simple: just position is enough for now. The 'fire' texture looks like a ball.
         
         // Parallax
         this.starsBg.tilePositionX += 0.1;
@@ -304,14 +374,23 @@ export class GameScene extends Phaser.Scene {
         }
     }
     
-    updateDangerZone(active) {
+    drawWorldBounds() {
         this.dangerOverlay.clear();
+        this.dangerOverlay.lineStyle(4, 0xff0000, 0.3);
+        this.dangerOverlay.strokeRect(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
+    }
+
+    updateDangerZone(active) {
+        // Redraw base bounds
+        this.drawWorldBounds();
+        
         if (active) {
             const alpha = 0.5 + Math.sin(this.time.now / 100) * 0.3;
-            this.dangerOverlay.lineStyle(20, 0xff0000, alpha);
-            this.dangerOverlay.strokeRect(0, 0, this.scale.width, this.scale.height);
-            this.dangerOverlay.fillStyle(0xff0000, 0.1);
-            this.dangerOverlay.fillRect(0, 0, this.scale.width, this.scale.height);
+            this.dangerOverlay.lineStyle(10, 0xff0000, alpha);
+            this.dangerOverlay.strokeRect(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
+            
+            // Optional: Draw 'DANGER' text or arrows?
+            // For now, pulsing border is good.
         }
     }
 
@@ -367,7 +446,15 @@ export class GameScene extends Phaser.Scene {
             }
 
             const type = (Math.random() < 0.3) ? 'SPRINTER' : 'CHASER';
-            enemy.spawn(x, y, type, this.currentEnemySpeedMultiplier);
+            // Random type based on difficulty/time?
+            // Let's mix it up
+            const rand = Math.random();
+            let enemyType = 'CHASER';
+            if (rand < 0.2) enemyType = 'SPRINTER';
+            else if (rand < 0.35) enemyType = 'SHOOTER';
+            else if (rand < 0.45) enemyType = 'KAMIKAZE';
+            
+            enemy.spawn(x, y, enemyType, this.currentEnemySpeedMultiplier);
             enemy.setTarget(this.player);
         }
     }
@@ -428,7 +515,36 @@ export class GameScene extends Phaser.Scene {
             if (GameState.volume > 0) this.explosionSound.play();
             this.cameras.main.shake(100, 0.005);
             this.particleEmitter.emitParticleAt(enemy.x, enemy.y, 10);
+            
+            // Chance to drop powerup
+            if (Math.random() < 0.1) { // 10% chance
+                const powerup = this.powerups.get();
+                if (powerup) {
+                    powerup.spawn(enemy.x, enemy.y);
+                }
+            }
         }
+    }
+
+    handlePlayerHitPowerup(player, powerup) {
+        if (!powerup.active) return;
+        powerup.collect(player);
+        if (GameState.volume > 0) {
+             // Play pickup sound if available
+        }
+    }
+
+    handleEnemyBulletHitPlayer(player, bullet) {
+        if (!bullet.active || !bullet.visible) return;
+        
+        bullet.setActive(false);
+        bullet.setVisible(false);
+        bullet.body.stop();
+        bullet.setPosition(-100, -100);
+        
+        const damage = bullet.damage || 5;
+        player.takeDamage(damage);
+        this.cameras.main.flash(100, 100, 0, 0);
     }
 
     handleBulletHitWorld(body, up, down, left, right) {

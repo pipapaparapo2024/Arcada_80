@@ -17,6 +17,9 @@ export const CONFIG = {
     PLAYER: {
         SPEED: 300,
         HP: 100,
+        AMMO_MAX: 30,
+        FIRE_RATE: 200, // ms
+        RELOAD_TIME: 1000,
         DASH_SPEED: 600,
         DASH_DURATION: 200,
         DASH_COOLDOWN: 1000,

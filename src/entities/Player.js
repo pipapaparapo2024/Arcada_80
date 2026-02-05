@@ -1,42 +1,6 @@
 import { CONFIG } from '../utils/Config.js';
 import { Weapon } from './Weapon.js';
-
-class Bullet extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, 'bullet');
-        this.bounceCount = 0;
-        this.isPiercing = false;
-        this.hitEnemies = [];
-    }
-
-    fire(x, y, rotation, speed, damage, tint) {
-        this.body.reset(x, y);
-        this.setActive(true);
-        this.setVisible(true);
-        this.setTint(tint || 0xffff00);
-        this.damage = damage; 
-        
-        this.setRotation(rotation);
-        this.scene.physics.velocityFromRotation(rotation, speed, this.body.velocity);
-        
-        // Reset properties
-        this.setCollideWorldBounds(false);
-        this.setBounce(0);
-        this.bounceCount = 0;
-        this.isPiercing = false;
-        this.hitEnemies = [];
-        this.setScale(1);
-        this.body.setSize(this.width, this.height);
-    }
-
-    preUpdate(time, delta) {
-        super.preUpdate(time, delta);
-        if (!this.body.collideWorldBounds && !this.scene.physics.world.bounds.contains(this.x, this.y)) {
-            this.setActive(false);
-            this.setVisible(false);
-        }
-    }
-}
+import { Bullet } from './Bullet.js';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
@@ -95,15 +59,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.hpBar = scene.add.graphics();
         this.updateHpBar();
         
-        // Bobbing Tween
-        this.bobTween = scene.tweens.add({
+        // Breathing Tween (Scale)
+        this.scene.tweens.add({
             targets: this,
-            y: '+=5',
+            scaleX: 1.05,
+            scaleY: 0.95,
             duration: 1000,
             yoyo: true,
             repeat: -1,
-            ease: 'Sine.easeInOut',
-            paused: false
+            ease: 'Sine.easeInOut'
         });
     }
 
@@ -121,13 +85,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleShooting(time);
         this.checkDangerZone(delta);
         this.handleAbility(time);
-
-        // Bobbing Logic
-        if (this.body.velocity.length() > 10) {
-            if (this.bobTween.isPlaying()) this.bobTween.pause();
-        } else {
-            if (this.bobTween.isPaused()) this.bobTween.resume();
-        }
     }
 
     checkDangerZone(delta) {
@@ -139,13 +96,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             const dmg = CONFIG.DANGER_ZONE.DAMAGE_PER_SEC * (delta / 1000);
             this.takeDamage(dmg, true); // true = silent damage (no screen shake)
             
-            // Pushback
+            // Pushback (Softened)
             const centerX = bounds.width / 2;
             const centerY = bounds.height / 2;
             const angle = Phaser.Math.Angle.Between(this.x, this.y, centerX, centerY);
             
-            this.body.velocity.x += Math.cos(angle) * CONFIG.DANGER_ZONE.PUSHBACK_FORCE * (delta/16);
-            this.body.velocity.y += Math.sin(angle) * CONFIG.DANGER_ZONE.PUSHBACK_FORCE * (delta/16);
+            // Reduced pushback to avoid teleportation feel
+            this.body.velocity.x += Math.cos(angle) * (CONFIG.DANGER_ZONE.PUSHBACK_FORCE * 0.1) * (delta/16);
+            this.body.velocity.y += Math.sin(angle) * (CONFIG.DANGER_ZONE.PUSHBACK_FORCE * 0.1) * (delta/16);
 
             this.emit('dangerZone', true);
         } else {

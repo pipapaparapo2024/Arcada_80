@@ -1,17 +1,36 @@
+import { Bullet } from './Bullet.js';
+
 export const ENEMY_TYPES = {
     CHASER: {
         texture: 'enemy_chaser',
         speed: 100,
         hp: 3,
         score: 100,
-        scale: 1 // Default scale
+        scale: 1
     },
     SPRINTER: {
         texture: 'enemy_sprinter',
-        speed: 150, // 1.5x
+        speed: 150,
         hp: 1,
         score: 150,
-        scale: 0.8 // Smaller
+        scale: 0.8
+    },
+    SHOOTER: {
+        texture: 'enemy_chaser', // Placeholder or use different tint
+        speed: 80,
+        hp: 5,
+        score: 200,
+        scale: 1.2,
+        canShoot: true,
+        fireRate: 2000
+    },
+    KAMIKAZE: {
+        texture: 'enemy_sprinter',
+        speed: 300,
+        hp: 1,
+        score: 300,
+        scale: 0.7,
+        kamikaze: true
     }
 };
 
@@ -36,10 +55,18 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.baseSpeed = config.speed;
         this.currentSpeed = config.speed;
         this.isKnockedBack = false;
+        this.shootTimer = 0;
         
         // Apply scale
         if (config.scale) {
             this.setScale(config.scale);
+        }
+        
+        if (this.config.canShoot) {
+            this.setTint(0xff0000); // Visual distinction
+        }
+        if (this.config.kamikaze) {
+            this.setTint(0xffaa00);
         }
     }
 
@@ -58,6 +85,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.hp = this.config.hp;
         this.baseSpeed = this.config.speed;
         this.currentSpeed = this.baseSpeed * speedMultiplier;
+        this.shootTimer = 0;
         
         if (this.config.scale) {
             this.setScale(this.config.scale);
@@ -67,6 +95,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         
         this.isKnockedBack = false;
         this.clearTint();
+        
+        if (this.config.canShoot) {
+            this.setTint(0xff0000); 
+        }
+        if (this.config.kamikaze) {
+            this.setTint(0xffaa00);
+        }
         
         // Reset body size in case texture size changed
         this.body.setSize(this.width, this.height);
@@ -83,15 +118,43 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             // Move towards target
             this.scene.physics.moveToObject(this, this.target, this.currentSpeed);
             
-            // Rotate towards target (phaser-dude faces front, so usually no rotation needed or flipX)
-            // But if we want it to "look" at player, we might rotate it?
-            // Phaser Dude is a platformer sprite (front facing). Rotating it looks weird.
-            // But 'ufo' (sprinter) is round.
-            // Let's rotate anyway as requested, but maybe add offset if needed.
-            // For now, standard rotation.
             const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
             this.setRotation(angle);
+
+            // Shooting Logic
+            if (this.config.canShoot && time > this.shootTimer) {
+                this.shoot(time);
+            }
+            
+            // Kamikaze Logic
+            if (this.config.kamikaze) {
+                const dist = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
+                if (dist < 100) {
+                    this.explode();
+                }
+            }
         }
+    }
+    
+    shoot(time) {
+        this.shootTimer = time + this.config.fireRate;
+        
+        // Create bullet (Scene must handle bullet group)
+        if (this.scene.enemyBullets) {
+            const bullet = this.scene.enemyBullets.get();
+            if (bullet) {
+                const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
+                bullet.fire(this.x, this.y, angle, 400, 10, 0xff0000, true);
+            }
+        }
+    }
+    
+    explode() {
+        this.takeDamage(100, this.x, this.y); // Self-destruct
+        // Deal damage to player if close? Handled by collision overlap in scene
+        // But we can force it here?
+        // Better to let scene collision handle it, but for AoE we might need custom logic.
+        // For now, it just dies and deals contact damage via existing overlap.
     }
 
     takeDamage(damage, sourceX, sourceY) {

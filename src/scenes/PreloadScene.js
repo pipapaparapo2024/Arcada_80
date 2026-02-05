@@ -13,10 +13,12 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image('enemy_sprinter', 'https://labs.phaser.io/assets/sprites/ufo.png');
         this.load.image('background', 'https://labs.phaser.io/assets/skies/space3.png');
         this.load.image('spark', 'https://labs.phaser.io/assets/particles/blue.png'); 
+        this.load.image('fire', 'https://labs.phaser.io/assets/particles/fire.png');
         
         // Load Audio
         this.load.audio('shoot', 'https://labs.phaser.io/assets/audio/SoundEffects/pistol.wav');
         this.load.audio('explosion', 'https://labs.phaser.io/assets/audio/SoundEffects/explosion.mp3');
+        this.load.audio('bgm', 'https://labs.phaser.io/assets/audio/tech/Asylum.mp3');
 
         // XP Orb - Generate texture programmatically
         const xpGfx = this.make.graphics({ x: 0, y: 0, add: false });

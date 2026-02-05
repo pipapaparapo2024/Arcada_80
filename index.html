@@ -8,20 +8,28 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #000;
+            background-color: #111;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             overflow: hidden;
         }
+        #game-container {
+            width: calc(100vw - 40px);
+            height: calc(100vh - 40px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
         canvas {
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: block;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
 </head>
 <body>
+    <div id="game-container"></div>
     <script type="module" src="./main.js"></script>
 </body>
 </html>
