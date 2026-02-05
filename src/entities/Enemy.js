@@ -31,6 +31,16 @@ export const ENEMY_TYPES = {
         score: 300,
         scale: 0.7,
         kamikaze: true
+    },
+    BOSS: {
+        texture: 'enemy_chaser',
+        speed: 40,
+        hp: 100,
+        score: 5000,
+        scale: 5,
+        canShoot: true,
+        fireRate: 1000,
+        boss: true
     }
 };
 

@@ -2,6 +2,7 @@ import { Player } from '../entities/Player.js';
 import { Enemy, ENEMY_TYPES } from '../entities/Enemy.js';
 import { Powerup } from '../entities/Powerup.js';
 import { Bullet } from '../entities/Bullet.js';
+import { XPOrb } from '../entities/XPOrb.js';
 import { CONFIG, GameState } from '../utils/Config.js';
 import { Lang } from '../utils/Lang.js';
 
@@ -14,7 +15,7 @@ export class GameScene extends Phaser.Scene {
         // Localization
         this.lang = Lang[GameState.lang];
 
-        // CRT Shader
+        // CRT Shader (Safe Check)
         if (this.game.renderer.pipelines && this.game.renderer.pipelines.has('CRTPipeline')) {
             this.cameras.main.setPostPipeline('CRTPipeline');
         }
@@ -83,6 +84,13 @@ export class GameScene extends Phaser.Scene {
             runChildUpdate: false // Powerups use tween/timer
         });
 
+        // XP Orbs Group
+        this.xpOrbs = this.physics.add.group({
+            classType: XPOrb,
+            runChildUpdate: true,
+            maxSize: 200
+        });
+
         // Particle Manager
         this.particleEmitter = this.add.particles(0, 0, 'spark', {
             speed: { min: 100, max: 200 },
@@ -98,6 +106,7 @@ export class GameScene extends Phaser.Scene {
         this.baseEnemySpeedMultiplier = this.difficulty.speedMult;
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         this.difficultyTimer = 0;
+        this.bossTimer = 0; // Timer for boss spawn
 
         this.spawnEvent = this.time.addEvent({
             delay: this.enemySpawnDelay,
@@ -111,10 +120,7 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.enemies, this.handleEnemyOverlap, null, this); 
         this.physics.add.overlap(this.player, this.powerups, this.handlePlayerHitPowerup, null, this);
         this.physics.add.overlap(this.player, this.enemyBullets, this.handleEnemyBulletHitPlayer, null, this);
-        this.physics.world.on('worldbounds', this.handleBulletHitWorld, this); // Re-binding listener if needed, but it's already bound earlier. 
-        // Actually, enemy bullets might also hit world bounds.
-        // We need to ensure 'worldbounds' event is fired for enemy bullets too.
-        // In Bullet.js we set collideWorldBounds(false) by default but we check manually in preUpdate.
+        this.physics.add.overlap(this.player, this.xpOrbs, this.handlePlayerHitOrb, null, this);
         
         // UI
         this.createUI();
@@ -131,15 +137,15 @@ export class GameScene extends Phaser.Scene {
         // Events
         this.events.on('resume', () => {
             this.input.keyboard.resetKeys();
-            // Resuming from another scene (like LevelUp)
         });
         
         this.scale.on('resize', this.resize, this);
 
-        // Sound Effects
-        this.shootSound = this.sound.add('shoot', { volume: GameState.volume / 100 });
-        this.explosionSound = this.sound.add('explosion', { volume: GameState.volume / 100 });
-        this.bgm = this.sound.add('bgm', { volume: GameState.volume / 100 * 0.5, loop: true });
+        // Sound Effects (Safe Volume)
+        const vol = (GameState.volume || 0) / 100;
+        this.shootSound = this.sound.add('shoot', { volume: vol });
+        this.explosionSound = this.sound.add('explosion', { volume: vol });
+        this.bgm = this.sound.add('bgm', { volume: vol * 0.5, loop: true });
         if (GameState.volume > 0) {
             this.bgm.play();
         }
@@ -152,7 +158,7 @@ export class GameScene extends Phaser.Scene {
             alpha: { start: 0.6, end: 0 },
             blendMode: 'ADD',
             frequency: 50,
-            angle: { min: 0, max: 360 } // Initial spray, updated in update
+            angle: { min: 0, max: 360 }
         });
         this.trailEmitter.startFollow(this.player);
     }
@@ -227,6 +233,15 @@ export class GameScene extends Phaser.Scene {
 
         this.player.update(time, delta);
         
+        // Magnet Logic
+        if (this.player.magnetActive) {
+            this.xpOrbs.getChildren().forEach(orb => {
+                if (orb.active) {
+                    this.physics.moveToObject(orb, this.player, 400);
+                }
+            });
+        }
+        
         // Update Trail
         // Calculate offset based on player rotation (engine is at the back)
         const rad = this.player.rotation;
@@ -236,23 +251,6 @@ export class GameScene extends Phaser.Scene {
         
         // Update follow offset so particles emit from the engine
         this.trailEmitter.followOffset.set(offX, offY);
-        
-        // Direct particles opposite to player rotation
-        // angle property in emitter config is absolute, so we set it here
-        // We want particles to shoot BACKWARDS relative to ship
-        // Ship faces 'rad', so backwards is rad + PI
-        // Particle emitter angle is in degrees usually for the config object, but setAngle might take degrees?
-        // setAngle takes value? Phaser 3 docs: emitter.angle is a property? No, it's an Ops.
-        // We probably need to update the processor?
-        // Actually, just setting the emitter to follow and offset is enough for position.
-        // For direction, if speed > 0, they fly out.
-        // If we want them to fly OUT from the engine in a cone, we set angle.
-        // The 'angle' property in config can be a number or object.
-        // To update it runtime:
-        // this.trailEmitter.setAngle({ min: ..., max: ... })?
-        // Or just:
-        // this.trailEmitter.angle.start = ...
-        // Let's keep it simple: just position is enough for now. The 'fire' texture looks like a ball.
         
         // Parallax
         this.starsBg.tilePositionX += 0.1;
@@ -265,6 +263,13 @@ export class GameScene extends Phaser.Scene {
         if (this.difficultyTimer >= 30000) {
             this.increaseDifficulty();
             this.difficultyTimer = 0;
+        }
+        
+        // Boss Timer
+        this.bossTimer += delta;
+        if (this.bossTimer >= 300000) { // 5 minutes
+            this.spawnBoss();
+            this.bossTimer = 0;
         }
         
         // Combo Timer
@@ -532,6 +537,53 @@ export class GameScene extends Phaser.Scene {
         if (GameState.volume > 0) {
              // Play pickup sound if available
         }
+    }
+
+    handlePlayerHitOrb(player, orb) {
+        if (!orb.active) return;
+        orb.collect();
+        player.gainXp(orb.value);
+        // Play XP sound
+    }
+
+    spawnBoss() {
+        const boss = this.enemies.get();
+        if (boss) {
+            // Spawn at top center
+            boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', 1);
+            
+            // Boss warning
+            const text = this.add.text(this.scale.width/2, this.scale.height/2, 'BOSS APPROACHING!', {
+                font: '64px Arial', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6
+            }).setOrigin(0.5).setScrollFactor(0);
+            
+            this.tweens.add({
+                targets: text,
+                alpha: 0,
+                scale: 2,
+                duration: 2000,
+                onComplete: () => text.destroy()
+            });
+        }
+    }
+
+    handleAbilityUsed(ability) {
+        // Handle ability visual effects or logic
+        // e.g., if ability is 'shield', show shield sprite
+    }
+
+    triggerLevelUp() {
+        this.scene.pause();
+        this.scene.launch('LevelUpScene', { 
+            player: this.player 
+        });
+    }
+
+    gameOver() {
+        this.isGameOver = true;
+        this.physics.pause();
+        this.gameOverText.setVisible(true);
+        this.gameOverText.setText(`${this.lang.GAME_OVER}\n${this.lang.SCORE}: ${Math.floor(this.score)}\n${this.lang.PRESS_R}`);
     }
 
     handleEnemyBulletHitPlayer(player, bullet) {

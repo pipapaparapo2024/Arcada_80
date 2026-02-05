@@ -54,6 +54,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.isDashing = false;
         this.canDash = true;
         this.invulnerable = false;
+        this.magnetActive = false;
 
         // Health Bar
         this.hpBar = scene.add.graphics();

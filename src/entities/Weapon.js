@@ -1,4 +1,4 @@
-import { CONFIG } from '../utils/Config.js';
+import { CONFIG, GameState } from '../utils/Config.js';
 
 export class Weapon {
     constructor(scene, player, configId) {
@@ -37,14 +37,14 @@ export class Weapon {
                 break;
         }
 
-        // Play sound (if available, distinct sounds would be great, but we might reuse 'shoot' with pitch changes)
-        if (this.scene.shootSound && this.scene.volume > 0) {
+        // Play sound
+        if (this.scene.shootSound && GameState.volume > 0) {
             let detune = 0;
             if (this.config.id === 'shotgun') detune = -500;
             if (this.config.id === 'laser') detune = 1000;
             if (this.config.id === 'ricochet') detune = 500;
             
-            this.scene.shootSound.play({ detune: detune, volume: this.scene.volume / 100 });
+            this.scene.shootSound.play({ detune: detune, volume: GameState.volume / 100 });
         }
 
         return true;
