@@ -182,21 +182,24 @@ export const GameState = {
     highScore: parseInt(localStorage.getItem('arcade_highscore')) || 0,
     volume: parseInt(localStorage.getItem('arcade_volume')) || 100,
     lang: localStorage.getItem('arcade_lang') || 'en',
-    
+    screenShake: localStorage.getItem('arcade_shake') !== 'false', // Default true
+
     saveHighScore(score) {
         if (score > this.highScore) {
             this.highScore = score;
             localStorage.setItem('arcade_highscore', score);
         }
     },
-
     saveVolume(volume) {
         this.volume = volume;
         localStorage.setItem('arcade_volume', volume);
     },
-
     saveLang(lang) {
         this.lang = lang;
         localStorage.setItem('arcade_lang', lang);
+    },
+    saveShake(enabled) {
+        this.screenShake = enabled;
+        localStorage.setItem('arcade_shake', enabled);
     }
 };

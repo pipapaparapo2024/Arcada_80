@@ -1,5 +1,5 @@
 import { Player } from '../entities/Player.js';
-import { Enemy, ENEMY_TYPES } from '../entities/Enemy.js';
+import { Enemy } from '../entities/Enemy.js';
 import { Powerup } from '../entities/Powerup.js';
 import { Bullet } from '../entities/Bullet.js';
 import { XPOrb } from '../entities/XPOrb.js';
@@ -386,10 +386,60 @@ export class GameScene extends Phaser.Scene {
             }
             this.updateComboUI();
         }
+        
+        this.updateAbilityUI(time);
+    }
+
+    updateAbilityUI(time) {
+        if (!this.player.activeAbility) {
+            this.abilityBarBg.setVisible(false);
+            this.abilityBarFill.setVisible(false);
+            this.abilityIcon.setText('');
+            return;
+        }
+
+        this.abilityBarBg.setVisible(true);
+        this.abilityBarFill.setVisible(true);
+        this.abilityIcon.setText('Q');
+
+        const cooldownEnd = this.player.abilityCooldownTimer;
+        const totalCooldown = this.player.activeAbility.cooldown;
+        
+        if (time >= cooldownEnd) {
+            // Ready
+            this.abilityBarFill.width = 200;
+            this.abilityBarFill.setFillStyle(0x00ff00);
+            
+            if (!this.abilityReadyFlashed) {
+                this.abilityReadyFlashed = true;
+                this.tweens.add({
+                    targets: this.abilityBarFill,
+                    alpha: 0.2,
+                    duration: 200,
+                    yoyo: true,
+                    repeat: 1
+                });
+            }
+        } else {
+            // Cooling down
+            this.abilityReadyFlashed = false;
+            const remaining = cooldownEnd - time;
+            const progress = 1 - (remaining / totalCooldown);
+            this.abilityBarFill.width = 200 * progress;
+            this.abilityBarFill.setFillStyle(0xffff00);
+            this.abilityBarFill.setAlpha(1);
+        }
     }
 
     createUI() {
         const { width, height } = this.scale;
+
+        // Scanlines (CRT Effect)
+        this.scanlines = this.add.tileSprite(0, 0, width, height, 'scanlines')
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setAlpha(0.15)
+            .setDepth(1900);
 
         // Ammo
         this.ammoText = this.add.text(10, 10, `${this.lang.AMMO}: ${CONFIG.PLAYER.AMMO_MAX}`, { 
@@ -405,13 +455,18 @@ export class GameScene extends Phaser.Scene {
             font: '24px Arial', fill: '#00ff00', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
 
+        // Ability Cooldown Bar
+        this.abilityBarBg = this.add.rectangle(10, 75, 200, 10, 0x333333).setScrollFactor(0).setOrigin(0, 0);
+        this.abilityBarFill = this.add.rectangle(10, 75, 0, 10, 0x00ff00).setScrollFactor(0).setOrigin(0, 0);
+        this.abilityIcon = this.add.text(220, 70, '', { font: '20px Arial', fill: '#ffffff' }).setScrollFactor(0);
+
         // Score
-        this.scoreText = this.add.text(10, 70, `${this.lang.SCORE}: 0`, { 
+        this.scoreText = this.add.text(10, 100, `${this.lang.SCORE}: 0`, { 
             font: '24px Arial', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
 
         // Combo
-        this.comboText = this.add.text(10, 100, '', { 
+        this.comboText = this.add.text(10, 130, '', { 
             font: '28px Arial', fill: '#00ffff', stroke: '#000000', strokeThickness: 4 
         }).setScrollFactor(0);
 
@@ -450,6 +505,9 @@ export class GameScene extends Phaser.Scene {
         // Camera
         this.cameras.main.setViewport(0, 0, width, height);
 
+        // Scanlines
+        if (this.scanlines) this.scanlines.setSize(width, height);
+
         // Backgrounds
         this.starsBg.setPosition(width/2, height/2).setSize(width, height);
         this.background.setPosition(width/2, height/2).setSize(width, height);
@@ -460,8 +518,13 @@ export class GameScene extends Phaser.Scene {
         // UI
         if (this.ammoText) this.ammoText.setPosition(10, 10);
         if (this.hpText) this.hpText.setPosition(10, 40);
-        if (this.scoreText) this.scoreText.setPosition(10, 70);
-        if (this.comboText) this.comboText.setPosition(10, 100);
+        
+        if (this.abilityBarBg) this.abilityBarBg.setPosition(10, 75);
+        if (this.abilityBarFill) this.abilityBarFill.setPosition(10, 75);
+        if (this.abilityIcon) this.abilityIcon.setPosition(220, 70);
+
+        if (this.scoreText) this.scoreText.setPosition(10, 100);
+        if (this.comboText) this.comboText.setPosition(10, 130);
         
         if (this.reloadText) this.reloadText.setPosition(width/2, height/2);
         if (this.gameOverText) this.gameOverText.setPosition(width/2, height/2);
@@ -582,9 +645,19 @@ export class GameScene extends Phaser.Scene {
             if (rand < 0.2) enemyType = 'SPRINTER';
             else if (rand < 0.35) enemyType = 'SHOOTER';
             else if (rand < 0.45) enemyType = 'KAMIKAZE';
+            else if (rand < 0.50) enemyType = 'ASTEROID';
             
             enemy.spawn(x, y, enemyType, this.currentEnemySpeedMultiplier);
-            enemy.setTarget(this.player);
+            
+            if (enemyType === 'ASTEROID') {
+                 // Drift towards center or random direction
+                 const angle = Phaser.Math.Angle.Between(x, y, CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2) + Phaser.Math.FloatBetween(-0.5, 0.5);
+                 this.physics.velocityFromRotation(angle, enemy.currentSpeed, enemy.body.velocity);
+                 enemy.setAngularVelocity(Phaser.Math.Between(-50, 50));
+                 enemy.setTarget(null);
+            } else {
+                 enemy.setTarget(this.player);
+            }
         }
     }
 
@@ -735,6 +808,15 @@ export class GameScene extends Phaser.Scene {
     handleEnemyOverlap(player, enemy) {
         if (!enemy.active || this.isGameOver) return;
         
+        // Asteroid Logic (Indestructible)
+        if (enemy.config.indestructible) {
+             const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+             player.setVelocity(Math.cos(angle) * 800, Math.sin(angle) * 800);
+             player.takeDamage(enemy.config.areaDamage || 20);
+             if (GameState.screenShake) this.cameras.main.shake(200, 0.02);
+             return;
+        }
+
         const angle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
         const bounceForce = 200;
         enemy.setVelocity(Math.cos(angle) * bounceForce, Math.sin(angle) * bounceForce);
@@ -766,7 +848,7 @@ export class GameScene extends Phaser.Scene {
                 targets: circle, radius: radius, alpha: 0, duration: 500,
                 onComplete: () => circle.destroy()
             });
-            this.cameras.main.shake(300, 0.02);
+            if (GameState.screenShake) this.cameras.main.shake(300, 0.02);
 
             this.enemies.getChildren().forEach(enemy => {
                 if (!enemy.active) return;
@@ -801,16 +883,13 @@ export class GameScene extends Phaser.Scene {
         this.isGameOver = true;
         this.physics.pause();
         this.player.setTint(0x555555);
-        this.gameOverText.setVisible(true);
         
-        const highScore = GameState.highScore || 0;
-        this.gameOverText.setText(
-            `${this.lang.GAME_OVER}\n` +
-            `${this.lang.SCORE}: ${Math.floor(this.score)}\n` +
-            `High Score: ${highScore}\n` +
-            `${this.lang.PRESS_R}`
-        );
-        GameState.saveHighScore(Math.floor(this.score));
+        // Pass data to GameOverScene
+        this.scene.start('GameOverScene', { 
+            score: this.score, 
+            highscore: GameState.highScore, 
+            level: this.player.level 
+        });
     }
 
     updateCombo() {

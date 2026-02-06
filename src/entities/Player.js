@@ -61,6 +61,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         // Health Bar
         this.hpBar = scene.add.graphics();
         this.updateHpBar();
+
+        // Ability Bar
+        this.abilityBar = scene.add.graphics();
         
         // Breathing Tween (Scale)
         this.scene.tweens.add({
@@ -76,6 +79,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     update(time, delta) {
         this.updateHpBar();
+        this.updateAbilityBar(time);
 
         // Magnet Logic (Active if skill taken)
         if (this.magnetActive && this.scene && this.scene.xpOrbs) {
@@ -233,6 +237,37 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         const hpPercent = this.hp / this.maxHp;
         this.hpBar.fillStyle(hpPercent < 0.3 ? 0xff0000 : 0x00ff00);
         this.hpBar.fillRect(this.x - 32, this.y - 50, 64 * hpPercent, 8);
+    }
+
+    updateAbilityBar(time) {
+        this.abilityBar.clear();
+        
+        if (!this.activeAbility) return;
+
+        // Draw background
+        this.abilityBar.fillStyle(0x000000);
+        this.abilityBar.fillRect(this.x - 32, this.y - 40, 64, 4);
+
+        // Calculate progress
+        let progress = 1;
+        if (time < this.abilityCooldownTimer) {
+            const totalCooldown = this.activeAbility.cooldown;
+            const remaining = this.abilityCooldownTimer - time;
+            progress = 1 - (remaining / totalCooldown);
+        }
+        
+        progress = Phaser.Math.Clamp(progress, 0, 1);
+
+        // Determine color
+        let color = 0xffff00; // Charging (Yellow)
+        if (progress >= 1) {
+            // Flash green when ready
+            const isFlash = Math.floor(time / 200) % 2 === 0;
+            color = isFlash ? 0x00ff00 : 0x00aa00; 
+        }
+
+        this.abilityBar.fillStyle(color);
+        this.abilityBar.fillRect(this.x - 32, this.y - 40, 64 * progress, 4);
     }
     
     gainXp(amount) {

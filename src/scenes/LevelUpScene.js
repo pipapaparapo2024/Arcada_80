@@ -94,12 +94,10 @@ export class LevelUpScene extends Phaser.Scene {
     resize(gameSize) {
         const { width, height } = gameSize;
 
-        if (this.overlay) this.overlay.setSize(width, height);
-        if (this.grid) {
+        if (this.overlay && this.overlay.setSize) this.overlay.setSize(width, height);
+        if (this.grid && this.grid.setPosition) {
             this.grid.setPosition(width/2, height/2);
             // Grid size update usually needs recreating or just ensuring it covers area.
-            // setSize for Grid exists? Yes.
-            this.grid.setSize(width, height);
         }
 
         if (this.titleText) this.titleText.setPosition(width/2, 100);
@@ -107,7 +105,7 @@ export class LevelUpScene extends Phaser.Scene {
 
         if (this.skillCards) {
             this.skillCards.forEach((card, index) => {
-                card.setPosition(width/2, 300 + (index * 150));
+                if (card && card.setPosition) card.setPosition(width/2, 300 + (index * 150));
             });
         }
     }

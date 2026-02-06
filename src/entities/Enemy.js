@@ -1,3 +1,4 @@
+import { GameState } from '../utils/Config.js';
 import { Bullet } from './Bullet.js';
 
 export const ENEMY_TYPES = {
@@ -41,6 +42,15 @@ export const ENEMY_TYPES = {
         canShoot: true,
         fireRate: 1000,
         boss: true
+    },
+    ASTEROID: {
+        texture: 'asteroid', // Ensure this key exists or use fallback
+        speed: 20,
+        hp: 9999,
+        score: 0,
+        scale: 2,
+        indestructible: true,
+        areaDamage: 10
     }
 };
 
@@ -50,7 +60,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         const validKey = (type && ENEMY_TYPES[type]) ? type : 'CHASER';
         const config = ENEMY_TYPES[validKey];
         
-        super(scene, x, y, config.texture);
+        super(scene, x, y, config.texture); // Make sure 'asteroid' texture is loaded or use placeholder in Preload
         
         // Add to scene and physics
         scene.add.existing(this);
@@ -171,7 +181,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
             if (dist < 200) { // Explosion radius
                  player.takeDamage(20); 
-                 this.scene.cameras.main.shake(200, 0.01);
+                 if (GameState.screenShake) this.scene.cameras.main.shake(200, 0.01);
             }
         }
         

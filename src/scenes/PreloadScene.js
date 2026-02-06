@@ -43,6 +43,23 @@ export class PreloadScene extends Phaser.Scene {
         swGfx.lineStyle(4, 0xffffff, 1);
         swGfx.strokeCircle(32, 32, 30);
         swGfx.generateTexture('shockwave', 64, 64);
+
+        // Asteroid Texture (Placeholder)
+        const asteroidGfx = this.make.graphics({ x: 0, y: 0, add: false });
+        asteroidGfx.fillStyle(0x888888, 1);
+        asteroidGfx.fillCircle(32, 32, 30);
+        asteroidGfx.fillStyle(0x666666, 1);
+        asteroidGfx.fillCircle(20, 20, 8);
+        asteroidGfx.fillCircle(40, 40, 12);
+        asteroidGfx.generateTexture('asteroid', 64, 64);
+
+        // Scanlines Texture
+        const scanGfx = this.make.graphics({ x: 0, y: 0, add: false });
+        scanGfx.fillStyle(0x000000, 0.3);
+        scanGfx.fillRect(0, 0, 2, 1);
+        scanGfx.fillStyle(0x000000, 0);
+        scanGfx.fillRect(0, 1, 2, 1);
+        scanGfx.generateTexture('scanlines', 2, 2);
     }
 
     create() {

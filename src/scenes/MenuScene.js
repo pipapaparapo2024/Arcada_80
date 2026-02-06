@@ -67,6 +67,28 @@ export class MenuScene extends Phaser.Scene {
         this.volumeText.on('pointerover', () => this.volumeText.setFill('#ffffff'));
         this.volumeText.on('pointerout', () => this.volumeText.setFill('#aaaaaa'));
 
+        // Screen Shake Settings
+        const shakeText = GameState.screenShake ? 'ON' : 'OFF';
+        this.shakeText = this.add.text(centerX, centerY + 200, `Screen Shake: ${shakeText}`, {
+            font: '24px Arial',
+            fill: '#aaaaaa'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.shakeText.on('pointerdown', () => {
+            const newState = !GameState.screenShake;
+            GameState.saveShake(newState);
+            this.shakeText.setText(`Screen Shake: ${newState ? 'ON' : 'OFF'}`);
+        });
+        this.shakeText.on('pointerover', () => this.shakeText.setFill('#ffffff'));
+        this.shakeText.on('pointerout', () => this.shakeText.setFill('#aaaaaa'));
+
+        // Instructions
+        this.add.text(centerX, height - 100, strings.START_GAME, {
+            font: '24px Arial',
+            fill: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5);
+
         // Start Button
         const startBtn = this.add.rectangle(centerX, centerY + 250, 300, 60, 0x00ff00)
             .setInteractive({ useHandCursor: true });
