@@ -105,14 +105,15 @@ export class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(-2);
         
-        // Second layer (Nebula/Stars) - slightly transparent, moves slower
+        // Second layer (Nebula/Stars) - Commented out to fix "line in middle" issue and improve performance
+        /* 
         this.background = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'background')
             .setOrigin(0, 0)
             .setScrollFactor(0)
             .setAlpha(0.5)
             .setBlendMode(Phaser.BlendModes.ADD)
             .setDepth(-1); 
-            // Note: reusing 'background' for now as requested, but ideally should be a different texture
+        */
         
         // Player
         this.player = new Player(this, CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2);
@@ -185,6 +186,8 @@ export class GameScene extends Phaser.Scene {
             lifespan: 500,
             frequency: -1
         });
+        
+        this.isSlowMo = false; // Flag for slow motion optimization
 
         // Spawning Logic
         this.enemySpawnDelay = 2000;
@@ -361,8 +364,8 @@ export class GameScene extends Phaser.Scene {
         // Parallax
         this.starsBg.tilePositionX += 0.1;
         this.starsBg.tilePositionY += 0.05;
-        this.background.tilePositionX += 0.5;
-        this.background.tilePositionY += 0.2;
+        // this.background.tilePositionX += 0.5;
+        // this.background.tilePositionY += 0.2;
         
         // Difficulty Timer
         this.difficultyTimer += delta;
@@ -510,7 +513,7 @@ export class GameScene extends Phaser.Scene {
 
         // Backgrounds
         this.starsBg.setPosition(width/2, height/2).setSize(width, height);
-        this.background.setPosition(width/2, height/2).setSize(width, height);
+        // this.background.setPosition(width/2, height/2).setSize(width, height);
         
         // Danger Zone
         this.updateDangerZone(false); // Clear and reset size (it will redraw on next update if active)
@@ -836,10 +839,12 @@ export class GameScene extends Phaser.Scene {
         if (ability.id === 'time_slow') {
             this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier * ability.factor;
             this.cameras.main.setTint(0xaaaaff);
+            this.isSlowMo = true;
             
             this.time.delayedCall(ability.duration, () => {
                 this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
                 this.cameras.main.clearTint();
+                this.isSlowMo = false;
             });
         } else if (ability.id === 'nova_blast') {
             const radius = ability.radius;
@@ -884,11 +889,17 @@ export class GameScene extends Phaser.Scene {
         this.physics.pause();
         this.player.setTint(0x555555);
         
+        console.log('Game Over triggered. Stats:', {
+            score: this.score,
+            highscore: GameState.highScore,
+            level: this.player ? this.player.level : 1
+        });
+
         // Pass data to GameOverScene
         this.scene.start('GameOverScene', { 
             score: this.score, 
             highscore: GameState.highScore, 
-            level: this.player.level 
+            level: this.player ? this.player.level : 1 
         });
     }
 

@@ -178,12 +178,16 @@ export const CONFIG = {
 
 // Global State container
 export const GameState = {
-    difficulty: CONFIG.DIFFICULTY.NORMAL,
+    difficulty: JSON.parse(localStorage.getItem('arcade_difficulty')) || CONFIG.DIFFICULTY.NORMAL,
     highScore: parseInt(localStorage.getItem('arcade_highscore')) || 0,
-    volume: parseInt(localStorage.getItem('arcade_volume')) || 100,
+    volume: localStorage.getItem('arcade_volume') !== null ? parseInt(localStorage.getItem('arcade_volume')) : 100,
     lang: localStorage.getItem('arcade_lang') || 'en',
     screenShake: localStorage.getItem('arcade_shake') !== 'false', // Default true
 
+    saveDifficulty(diff) {
+        this.difficulty = diff;
+        localStorage.setItem('arcade_difficulty', JSON.stringify(diff));
+    },
     saveHighScore(score) {
         if (score > this.highScore) {
             this.highScore = score;

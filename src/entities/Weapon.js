@@ -100,8 +100,8 @@ export class Weapon {
         const bullet = this.player.bullets.get(this.player.x, this.player.y);
         if (bullet) {
             const angle = this.player.rotation - Math.PI / 2;
-            // Pass null/0xffffff as color to preserve sprite original look
-            bullet.fire(this.player.x, this.player.y, angle, this.config.speed, this.config.damage * this.player.damageMultiplier, 0xffffff);
+            // Pass undefined as color to preserve sprite original look (bullet6.png)
+            bullet.fire(this.player.x, this.player.y, angle, this.config.speed, this.config.damage * this.player.damageMultiplier, undefined);
             
             // Enable bounce
             bullet.setCollideWorldBounds(true);

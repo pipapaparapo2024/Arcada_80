@@ -218,7 +218,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // Play explosion sound only once
         if (this.scene && this.scene.explosionSound) {
-             this.scene.explosionSound.play();
+             this.scene.explosionSound.play({ volume: GameState.volume / 100 });
         }
 
         // Spawn particles
@@ -229,6 +229,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     
     createDeathParticles() {
+        // Optimization: Skip particles during slow motion to prevent freeze
+        if (this.scene.isSlowMo) return;
+
         // Simple particle effect using the enemy's texture or a particle texture
         // We'll use the 'spark' texture we loaded, tinted to the enemy's color?
         // Or just use the enemy texture scaled down?

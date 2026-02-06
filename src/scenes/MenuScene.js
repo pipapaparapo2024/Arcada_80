@@ -105,7 +105,10 @@ export class MenuScene extends Phaser.Scene {
 
         // Language Toggle (Bottom Right)
         const langText = GameState.lang.toUpperCase();
-        const langBtn = this.add.text(width - 50, height - 50, langText, {
+        const camW = this.cameras.main.width;
+        const camH = this.cameras.main.height;
+        
+        const langBtn = this.add.text(camW - 50, camH - 50, langText, {
             font: '32px Arial',
             fill: '#ffffff',
             stroke: '#000000',
@@ -156,7 +159,7 @@ export class MenuScene extends Phaser.Scene {
         selectedBg.setFillStyle(0x00aaaa);
         
         // Update Global State
-        GameState.difficulty = CONFIG.DIFFICULTY[key];
+        GameState.saveDifficulty(CONFIG.DIFFICULTY[key]);
     }
 
     toggleVolume() {
