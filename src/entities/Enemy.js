@@ -167,30 +167,39 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // For now, it just dies and deals contact damage via existing overlap.
     }
 
-    takeDamage(damage, sourceX, sourceY) {
-        this.hp -= damage;
+    takeDamage(amount) {
+        this.hp -= amount;
         
-        // Flash white
-        this.setTintFill(0xffffff);
-
-        this.scene.time.delayedCall(100, () => {
+        // Flash red
+        this.setTint(0xff0000);
+        if (this.flashTimer) this.flashTimer.remove();
+        this.flashTimer = this.scene.time.delayedCall(100, () => {
             if (this.active) this.clearTint();
         });
 
-        // Knockback
-        this.isKnockedBack = true;
-        const angle = Phaser.Math.Angle.Between(sourceX, sourceY, this.x, this.y);
-        this.scene.physics.velocityFromRotation(angle, 150, this.body.velocity); 
-
-        this.scene.time.delayedCall(200, () => {
-            if (this.active) this.isKnockedBack = false;
-        });
-
         if (this.hp <= 0) {
-            this.createDeathParticles();
-            return true; // Died
+            this.die();
         }
-        return false; // Alive
+    }
+
+    die() {
+        // Play explosion sound only once
+        if (this.scene && this.scene.explosionSound) {
+             this.scene.explosionSound.play();
+        }
+
+        // Spawn particles
+        // ... (particle logic)
+        
+        // Notify scene
+        if (this.scene.updateCombo) {
+            this.scene.updateCombo();
+        }
+        
+        // Chance to drop powerup or XP
+        // ...
+
+        this.destroy();
     }
     
     createDeathParticles() {

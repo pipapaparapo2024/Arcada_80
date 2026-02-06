@@ -19,7 +19,8 @@ export class PreloadScene extends Phaser.Scene {
 
         // Load Images
         this.load.image('player', './assets/sprites/ship.png');
-        this.load.image('bullet', './assets/sprites/bullets/bullet1.png');
+        this.load.image('bullet', './assets/sprites/bullets/bullet6.png');
+        this.load.image('bullet_enemy', './assets/sprites/bullets/bullet2.png');
         this.load.image('enemy_chaser', './assets/sprites/phaser-dude.png');
         this.load.image('enemy_sprinter', './assets/sprites/ufo.png');
         this.load.image('background', './assets/skies/space3.png');

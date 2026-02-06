@@ -39,7 +39,38 @@ export class GameScene extends Phaser.Scene {
         // CRT Shader (Safe Check)
         if (this.game.renderer.pipelines && this.game.renderer.pipelines.has('CRTPipeline')) {
             this.cameras.main.setPostPipeline('CRTPipeline');
+        } else {
+            // Fallback: Simple scanline overlay using a tileSprite
+            // We create a 1x2 texture with one transparent and one semi-transparent black pixel
+            if (!this.textures.exists('scanlines')) {
+                const graphics = this.make.graphics({x: 0, y: 0, add: false});
+                graphics.fillStyle(0x000000, 0.2); // Dark line
+                graphics.fillRect(0, 0, 4, 2);
+                graphics.fillStyle(0x000000, 0);   // Transparent line
+                graphics.fillRect(0, 2, 4, 2);
+                graphics.generateTexture('scanlines', 4, 4);
+            }
+            
+            this.scanlines = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'scanlines')
+                .setOrigin(0, 0)
+                .setScrollFactor(0)
+                .setDepth(1000)
+                .setAlpha(0.5);
+
+            // Vignette (simple radial gradient overlay)
+            if (!this.textures.exists('vignette')) {
+                const vig = this.make.graphics({x:0, y:0, add: false});
+                vig.fillStyle(0x000000, 1);
+                vig.fillRect(0,0,800,600);
+                const texture = vig.generateTexture('vignette_base', 800, 600);
+                // Note: Real vignette usually needs a shader or a sprite with a transparent center gradient.
+                // For now, let's use a simple overlay image if available, or skip complex generation to avoid overhead.
+                // We'll stick to scanlines as the primary "TV effect" fallback.
+            }
         }
+
+        // HUD Container
+        this.hudContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
 
         // Apply difficulty settings
         this.difficulty = GameState.difficulty;
@@ -50,14 +81,20 @@ export class GameScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
         this.physics.world.on('worldbounds', this.handleBulletHitWorld, this);
         
-        // Parallax Background
-        this.starsBg = this.add.tileSprite(
-            this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 'background'
-        ).setScrollFactor(0).setAlpha(0.5).setDepth(-2);
-
-        this.background = this.add.tileSprite(
-            this.scale.width/2, this.scale.height/2, this.scale.width, this.scale.height, 'background'
-        ).setScrollFactor(0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.3).setDepth(-1);
+        // Parallax Backgrounds
+        this.starsBg = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'background')
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(-2);
+        
+        // Second layer (Nebula/Stars) - slightly transparent, moves slower
+        this.background = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'background')
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setAlpha(0.5)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setDepth(-1); 
+            // Note: reusing 'background' for now as requested, but ideally should be a different texture
         
         // Player
         this.player = new Player(this, CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2);
@@ -76,7 +113,16 @@ export class GameScene extends Phaser.Scene {
         // Combo System
         this.combo = 0;
         this.comboMultiplier = 1;
-        this.comboTimer = 0;
+        this.lastKillTime = 0;
+        this.comboTimerEvent = null;
+
+        this.comboText = this.add.text(this.scale.width - 20, 100, '', {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '32px',
+            color: '#ff00ff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
         
         this.score = 0;
         this.isGameOver = false;
@@ -534,7 +580,7 @@ export class GameScene extends Phaser.Scene {
             
             this.score += enemy.config.score * this.difficulty.scoreMult * this.comboMultiplier;
             this.scoreText.setText(`${this.lang.SCORE}: ${Math.floor(this.score)}`);
-            this.increaseCombo();
+            this.updateCombo(); // Changed from increaseCombo to updateCombo
             
             this.player.gainXp(CONFIG.XP.ORB_VALUE);
             this.player.onKill();
@@ -548,7 +594,9 @@ export class GameScene extends Phaser.Scene {
                 onComplete: () => xpText.destroy()
             });
 
-            if (GameState.volume > 0) this.explosionSound.play();
+            // Removed manual explosion sound play here as it is now handled in Enemy.die()
+            // if (GameState.volume > 0) this.explosionSound.play();
+            
             this.cameras.main.shake(100, 0.005);
             this.particleEmitter.emitParticleAt(enemy.x, enemy.y, 10);
             

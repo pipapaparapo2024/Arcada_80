@@ -74,6 +74,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     update(time, delta) {
         this.updateHpBar();
+
+        // Magnet Logic (Active if skill taken)
+        if (this.magnetActive && this.scene && this.scene.xpOrbs) {
+            this.scene.xpOrbs.children.iterate((orb) => {
+                if (orb && orb.active) {
+                    const dist = Phaser.Math.Distance.Between(this.x, this.y, orb.x, orb.y);
+                    if (dist < 300) { // Magnet range
+                        this.scene.physics.moveToObject(orb, this, 400); // Pull speed
+                    }
+                }
+            });
+        }
         
         this.handleReload();
         this.handleDash(time);
