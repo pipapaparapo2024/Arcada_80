@@ -179,7 +179,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         if (this.hp <= 0) {
             this.die();
+            return true;
         }
+        return false;
     }
 
     die() {
@@ -189,16 +191,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         }
 
         // Spawn particles
-        // ... (particle logic)
+        this.createDeathParticles();
         
-        // Notify scene
-        if (this.scene.updateCombo) {
-            this.scene.updateCombo();
-        }
+        // Chance to drop powerup or XP (handled in GameScene for now)
         
-        // Chance to drop powerup or XP
-        // ...
-
         this.destroy();
     }
     
