@@ -33,33 +33,33 @@ export class MenuScene extends Phaser.Scene {
 
         // Background
         this.add.rectangle(0, 0, width, height, 0x111111).setOrigin(0);
-        this.add.grid(centerX, centerY, width, height, 80, 80, 0x000000).setAltFillStyle(0x010101).setOutlineStyle(0x222222);
+        this.add.grid(centerX, centerY, width, height, 40, 40, 0x000000).setAltFillStyle(0x010101).setOutlineStyle(0x222222);
 
         // Title
-        this.add.text(centerX, centerY - 200, 'ARCADA SHOOTER', {
-            font: '64px Arial',
+        this.add.text(centerX, centerY - 80, 'ARCADA SHOOTER', {
+            font: '24px "Press Start 2P"',
             fill: '#ffffff',
             stroke: '#00ffff',
-            strokeThickness: 6
+            strokeThickness: 4
         }).setOrigin(0.5);
 
         // High Score
-        this.add.text(centerX, centerY - 120, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
-            font: '32px Arial',
+        this.add.text(centerX, centerY - 50, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
+            font: '10px "Press Start 2P"',
             fill: '#ffff00'
         }).setOrigin(0.5);
 
         // Difficulty Selection
-        this.add.text(centerX, centerY - 50, strings.SELECT_DIFFICULTY, {
-            font: '24px Arial',
+        this.add.text(centerX, centerY - 20, strings.SELECT_DIFFICULTY, {
+            font: '8px "Press Start 2P"',
             fill: '#aaaaaa'
         }).setOrigin(0.5);
 
         this.createDifficultyButtons(centerX, centerY);
 
         // Volume Settings
-        this.volumeText = this.add.text(centerX, centerY + 150, `${strings.VOLUME}: ${GameState.volume}%`, {
-            font: '24px Arial',
+        this.volumeText = this.add.text(centerX, centerY + 60, `${strings.VOLUME}: ${GameState.volume}%`, {
+            font: '8px "Press Start 2P"',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -69,8 +69,8 @@ export class MenuScene extends Phaser.Scene {
 
         // Screen Shake Settings
         const shakeText = GameState.screenShake ? 'ON' : 'OFF';
-        this.shakeText = this.add.text(centerX, centerY + 200, `Screen Shake: ${shakeText}`, {
-            font: '24px Arial',
+        this.shakeText = this.add.text(centerX, centerY + 80, `Screen Shake: ${shakeText}`, {
+            font: '8px "Press Start 2P"',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -82,21 +82,13 @@ export class MenuScene extends Phaser.Scene {
         this.shakeText.on('pointerover', () => this.shakeText.setFill('#ffffff'));
         this.shakeText.on('pointerout', () => this.shakeText.setFill('#aaaaaa'));
 
-        // Instructions
-        this.add.text(centerX, height - 100, strings.START_GAME, {
-            font: '24px Arial',
-            fill: '#ffffff',
-            align: 'center'
-        }).setOrigin(0.5);
-
         // Start Button
-        const startBtn = this.add.rectangle(centerX, centerY + 250, 300, 60, 0x00ff00)
+        const startBtn = this.add.rectangle(centerX, centerY + 110, 150, 30, 0x00ff00)
             .setInteractive({ useHandCursor: true });
         
-        const startText = this.add.text(centerX, centerY + 250, strings.START_GAME, {
-            font: '28px Arial',
-            fill: '#000000',
-            fontStyle: 'bold'
+        const startText = this.add.text(centerX, centerY + 110, strings.START_GAME, {
+            font: '12px "Press Start 2P"',
+            fill: '#000000'
         }).setOrigin(0.5);
 
         startBtn.on('pointerover', () => startBtn.setFillStyle(0x00dd00));
@@ -108,11 +100,11 @@ export class MenuScene extends Phaser.Scene {
         const camW = this.cameras.main.width;
         const camH = this.cameras.main.height;
         
-        const langBtn = this.add.text(camW - 50, camH - 50, langText, {
-            font: '32px Arial',
+        const langBtn = this.add.text(camW - 20, camH - 20, langText, {
+            font: '10px "Press Start 2P"',
             fill: '#ffffff',
             stroke: '#000000',
-            strokeThickness: 4
+            strokeThickness: 2
         }).setOrigin(1, 1).setInteractive({ useHandCursor: true });
 
         langBtn.on('pointerdown', () => this.toggleLang());
@@ -132,14 +124,14 @@ export class MenuScene extends Phaser.Scene {
             // Default select NORMAL if not already set, or match current state
             const isSelected = (diff.name === GameState.difficulty.name);
             
-            const btnX = x + (index - 1) * 160;
-            const btnY = startY + 50;
+            const btnX = x + (index - 1) * 60; // Reduced spacing
+            const btnY = startY + 10;
 
-            const bg = this.add.rectangle(btnX, btnY, 140, 50, isSelected ? 0x00aaaa : 0x333333)
+            const bg = this.add.rectangle(btnX, btnY, 50, 20, isSelected ? 0x00aaaa : 0x333333)
                 .setInteractive({ useHandCursor: true });
             
             const text = this.add.text(btnX, btnY, strings['DIFF_' + key], {
-                font: '20px Arial',
+                font: '8px "Press Start 2P"',
                 fill: '#ffffff'
             }).setOrigin(0.5);
 

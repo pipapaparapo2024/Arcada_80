@@ -54,6 +54,10 @@ export class CRTPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline 
                     // Muted Colors (Retro Feel)
                     color *= 0.9; // Slight darkening
                     
+                    // Color Quantization (Simulate 16-32 color palette)
+                    float levels = 4.0; // 4*4*4 = 64 colors (close to 6-bit color)
+                    color = floor(color * levels) / levels;
+
                     gl_FragColor = vec4(color, 1.0);
                 }
             `

@@ -60,6 +60,30 @@ export class PreloadScene extends Phaser.Scene {
         scanGfx.fillStyle(0x000000, 0);
         scanGfx.fillRect(0, 1, 2, 1);
         scanGfx.generateTexture('scanlines', 2, 2);
+
+        // Pixel Texture (for debris)
+        const pixelGfx = this.make.graphics({ x: 0, y: 0, add: false });
+        pixelGfx.fillStyle(0xffffff, 1);
+        pixelGfx.fillRect(0, 0, 2, 2); // 2x2 for better visibility
+        pixelGfx.generateTexture('pixel', 2, 2);
+
+        // Noise Texture (for static)
+        if (!this.textures.exists('noise')) {
+            const noiseSize = 64;
+            const canvas = this.textures.createCanvas('noise', noiseSize, noiseSize);
+            const ctx = canvas.context;
+            const idata = ctx.createImageData(noiseSize, noiseSize);
+            const buffer = new Uint32Array(idata.data.buffer);
+            for (let i = 0; i < buffer.length; i++) {
+                if (Math.random() < 0.5) {
+                    buffer[i] = 0xffffffff; // White
+                } else {
+                    buffer[i] = 0xff000000; // Black
+                }
+            }
+            ctx.putImageData(idata, 0, 0);
+            canvas.refresh();
+        }
     }
 
     create() {

@@ -123,11 +123,35 @@ export class GameScene extends Phaser.Scene {
         this.dangerOverlay.setScrollFactor(1); // World space
         this.dangerOverlay.setDepth(100);
         
+        // Static Noise Overlay (for damage effect)
+        this.noiseOverlay = this.add.tileSprite(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT, 'noise')
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setAlpha(0)
+            .setDepth(2000) // Above UI? Or below pause menu? Pause is 2000. Let's say 1900.
+            .setBlendMode(Phaser.BlendModes.ADD);
+
         // Draw the boundary permanently so player knows where it is
         this.drawWorldBounds();
         
         this.player.on('dangerZone', (active) => this.updateDangerZone(active));
         this.player.on('abilityUsed', (ability) => this.handleAbilityUsed(ability));
+        this.player.on('damage', () => {
+            // Static Noise Flash
+            this.noiseOverlay.setAlpha(0.3);
+            this.noiseOverlay.tilePositionX = Math.random() * 100;
+            this.noiseOverlay.tilePositionY = Math.random() * 100;
+            
+            this.tweens.add({
+                targets: this.noiseOverlay,
+                alpha: 0,
+                duration: 200,
+                ease: 'Power2'
+            });
+            
+            // Screen Shake
+            this.cameras.main.shake(200, 0.02);
+        });
         
         // Combo System
         this.combo = 0;
@@ -188,22 +212,15 @@ export class GameScene extends Phaser.Scene {
         });
         
         this.isSlowMo = false; // Flag for slow motion optimization
+        this.bossActive = false; // Boss flag
 
         // Spawning Logic
         this.enemySpawnDelay = 2000;
         this.baseEnemySpeedMultiplier = this.difficulty.speedMult;
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         this.difficultyTimer = 0;
-        this.bossTimer = 0; // Timer for boss spawn
 
-        // Boss Spawn Timer (Every 5 minutes)
-        this.time.addEvent({
-            delay: 60000 * 5, // 5 minutes
-            callback: this.spawnBoss,
-            callbackScope: this,
-            loop: true
-        });
-
+        // Enemy Spawn Timer
         this.spawnEvent = this.time.addEvent({
             delay: this.enemySpawnDelay,
             callback: this.spawnEnemy,
@@ -240,13 +257,13 @@ export class GameScene extends Phaser.Scene {
         // Sound Effects (Safe Volume)
         const vol = (GameState.volume || 0) / 100;
         
-        // Safe Audio Adding
-        const addSoundSafe = (key, config) => {
-            if (this.cache.audio.exists(key)) {
-                return this.sound.add(key, config);
-            }
-            return { play: () => {}, stop: () => {} }; // Dummy sound object
-        };
+            // Safe Audio Adding
+            const addSoundSafe = (key, config) => {
+                if (this.cache.audio.exists(key)) {
+                    return this.sound.add(key, config);
+                }
+                return { play: () => {}, stop: () => {} }; // Dummy sound object
+            };
 
         this.shootSound = addSoundSafe('shoot', { volume: vol });
         this.explosionSound = addSoundSafe('explosion', { volume: vol });
@@ -267,6 +284,16 @@ export class GameScene extends Phaser.Scene {
             angle: { min: 0, max: 360 }
         });
         this.trailEmitter.startFollow(this.player);
+
+        // Debris Emitter (for enemy death)
+        this.debrisEmitter = this.add.particles(0, 0, 'pixel', {
+            lifespan: 500,
+            speed: { min: 100, max: 200 },
+            scale: { start: 3, end: 0 },
+            rotate: { min: 0, max: 360 },
+            alpha: { start: 1, end: 0 },
+            emitting: false
+        });
     }
 
     createPauseUI() {
@@ -329,12 +356,12 @@ export class GameScene extends Phaser.Scene {
         if (this.isPaused) return;
 
         // Sync UI strictly with data
-        this.hpText.setText(`HP: ${Math.max(0, Math.ceil(this.player.hp))}`);
+        if (this.hpText) this.hpText.setText(`HP: ${Math.max(0, Math.ceil(this.player.hp))}`);
 
         if (this.isGameOver) {
             this.trailEmitter.stop(); // Stop trail on death
             if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
-                this.bgm.stop();
+                if (this.bgm && this.bgm.stop) this.bgm.stop();
                 this.scene.restart();
             }
             return;
@@ -446,44 +473,44 @@ export class GameScene extends Phaser.Scene {
 
         // Ammo
         this.ammoText = this.add.text(10, 10, `${this.lang.AMMO}: ${CONFIG.PLAYER.AMMO_MAX}`, { 
-            font: '24px Arial', fill: '#ffffff', stroke: '#000000', strokeThickness: 2 
+            font: '10px "Press Start 2P"', fill: '#ffffff', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
         
         this.reloadText = this.add.text(width/2, height/2, this.lang.RELOADING, { 
-            font: '32px Arial', fill: '#ff0000', stroke: '#000000', strokeThickness: 3 
+            font: '16px "Press Start 2P"', fill: '#ff0000', stroke: '#000000', strokeThickness: 3 
         }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
 
         // HP
-        this.hpText = this.add.text(10, 40, `HP: ${CONFIG.PLAYER.HP}`, { 
-            font: '24px Arial', fill: '#00ff00', stroke: '#000000', strokeThickness: 2 
+        this.hpText = this.add.text(10, 25, `HP: ${CONFIG.PLAYER.HP}`, { 
+            font: '10px "Press Start 2P"', fill: '#00ff00', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
 
         // Ability Cooldown Bar
-        this.abilityBarBg = this.add.rectangle(10, 75, 200, 10, 0x333333).setScrollFactor(0).setOrigin(0, 0);
-        this.abilityBarFill = this.add.rectangle(10, 75, 0, 10, 0x00ff00).setScrollFactor(0).setOrigin(0, 0);
-        this.abilityIcon = this.add.text(220, 70, '', { font: '20px Arial', fill: '#ffffff' }).setScrollFactor(0);
+        this.abilityBarBg = this.add.rectangle(10, 45, 100, 6, 0x333333).setScrollFactor(0).setOrigin(0, 0);
+        this.abilityBarFill = this.add.rectangle(10, 45, 0, 6, 0x00ff00).setScrollFactor(0).setOrigin(0, 0);
+        this.abilityIcon = this.add.text(115, 42, '', { font: '8px "Press Start 2P"', fill: '#ffffff' }).setScrollFactor(0);
 
         // Score
-        this.scoreText = this.add.text(10, 100, `${this.lang.SCORE}: 0`, { 
-            font: '24px Arial', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
+        this.scoreText = this.add.text(10, 60, `${this.lang.SCORE}: 0`, { 
+            font: '10px "Press Start 2P"', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
         }).setScrollFactor(0);
 
         // Combo
-        this.comboText = this.add.text(10, 130, '', { 
-            font: '28px Arial', fill: '#00ffff', stroke: '#000000', strokeThickness: 4 
+        this.comboText = this.add.text(10, 75, '', { 
+            font: '12px "Press Start 2P"', fill: '#00ffff', stroke: '#000000', strokeThickness: 4 
         }).setScrollFactor(0);
 
         // XP Bar
-        const barY = height - 30;
-        this.xpBarBg = this.add.rectangle(width/2, barY, width - 40, 20, 0x000000).setScrollFactor(0).setStrokeStyle(2, 0x333333);
-        this.xpBarFill = this.add.rectangle(20, barY, 0, 20, 0x00ffff).setScrollFactor(0).setOrigin(0, 0.5);
-        this.levelText = this.add.text(width/2, barY - 25, `${this.lang.LEVEL} 1`, {
-            font: '20px Arial', fill: '#00ffff', stroke: '#000000', strokeThickness: 4
+        const barY = height - 15;
+        this.xpBarBg = this.add.rectangle(width/2, barY, width - 20, 10, 0x000000).setScrollFactor(0).setStrokeStyle(1, 0x333333);
+        this.xpBarFill = this.add.rectangle(10, barY, 0, 10, 0x00ffff).setScrollFactor(0).setOrigin(0, 0.5);
+        this.levelText = this.add.text(width/2, barY - 12, `${this.lang.LEVEL} 1`, {
+            font: '8px "Press Start 2P"', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
         }).setScrollFactor(0).setOrigin(0.5);
 
         // Game Over
         this.gameOverText = this.add.text(width/2, height/2, this.lang.GAME_OVER, { 
-            font: '48px Arial', fill: '#ff0000', align: 'center', stroke: '#000000', strokeThickness: 4
+            font: '24px "Press Start 2P"', fill: '#ff0000', align: 'center', stroke: '#000000', strokeThickness: 4
         }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
 
         // Listeners
@@ -493,7 +520,7 @@ export class GameScene extends Phaser.Scene {
         this.player.on('hpChanged', (hp, max) => this.hpText.setText(`HP: ${Math.ceil(hp)}`));
         this.player.on('xpChanged', (xp, next, level) => {
             this.currentXpPercent = Phaser.Math.Clamp(xp / next, 0, 1);
-            this.xpBarFill.width = (this.scale.width - 40) * this.currentXpPercent;
+            this.xpBarFill.width = (this.scale.width - 20) * this.currentXpPercent;
             this.levelText.setText(`${this.lang.LEVEL} ${level}`);
         });
         
@@ -510,6 +537,9 @@ export class GameScene extends Phaser.Scene {
 
         // Scanlines
         if (this.scanlines) this.scanlines.setSize(width, height);
+        
+        // Noise Overlay
+        if (this.noiseOverlay) this.noiseOverlay.setSize(width, height);
 
         // Backgrounds
         this.starsBg.setPosition(width/2, height/2).setSize(width, height);
@@ -568,8 +598,8 @@ export class GameScene extends Phaser.Scene {
             
             // Warning Text
             if (!this.warningText) {
-                this.warningText = this.add.text(this.scale.width/2, this.scale.height/2 - 200, 'WARNING: OUT OF ZONE!', {
-                    font: '48px Arial', fill: '#ff0000', stroke: '#000000', strokeThickness: 6
+                this.warningText = this.add.text(CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2, 'WARNING: OUT OF ZONE!', {
+                    font: '16px "Press Start 2P"', fill: '#ff0000', stroke: '#000000', strokeThickness: 4, align: 'center'
                 }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
                 
                 this.tweens.add({
@@ -577,7 +607,7 @@ export class GameScene extends Phaser.Scene {
                 });
             }
             this.warningText.setVisible(true);
-            this.warningText.setPosition(this.scale.width/2, this.scale.height/2 - 200);
+            this.warningText.setPosition(CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2);
 
             // Damage Timer
             if (!this.outOfBoundsTimer) {
@@ -624,7 +654,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     spawnEnemy() {
-        if (this.isGameOver || this.isPaused) return;
+        if (this.isGameOver || this.isPaused || this.bossActive) return;
 
         const enemy = this.enemies.get();
         if (enemy) {
@@ -696,6 +726,13 @@ export class GameScene extends Phaser.Scene {
         const died = enemy.takeDamage(bullet.damage || 1, bullet.x, bullet.y);
         
         if (died) {
+            // Check if it was a boss
+            if (enemy.config.boss) {
+                this.bossActive = false;
+                // Add big explosion or effect
+                this.cameras.main.shake(500, 0.05);
+            }
+
             enemy.setActive(false);
             enemy.setVisible(false);
             if (enemy.body) enemy.body.stop();
@@ -763,21 +800,26 @@ export class GameScene extends Phaser.Scene {
     }
 
     spawnBoss() {
+        if (this.bossActive) return;
+        
         const boss = this.enemies.get();
         if (boss) {
+            this.bossActive = true;
+            this.bossSpawnedForLevel = true;
+            
             // Spawn at top center
             boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', 1);
             
             // Boss warning
             const text = this.add.text(this.scale.width/2, this.scale.height/2, this.lang.BOSS_APPROACHING, {
-                font: '64px Arial', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6
+                font: '32px "Press Start 2P"', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6
             }).setOrigin(0.5).setScrollFactor(0);
             
             this.tweens.add({
                 targets: text,
                 alpha: 0,
-                scale: 2,
-                duration: 2000,
+                scale: 1.2,
+                duration: 3000,
                 onComplete: () => text.destroy()
             });
         }
@@ -836,17 +878,7 @@ export class GameScene extends Phaser.Scene {
     }
     
     handleAbilityUsed(ability) {
-        if (ability.id === 'time_slow') {
-            this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier * ability.factor;
-            this.cameras.main.setTint(0xaaaaff);
-            this.isSlowMo = true;
-            
-            this.time.delayedCall(ability.duration, () => {
-                this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
-                this.cameras.main.clearTint();
-                this.isSlowMo = false;
-            });
-        } else if (ability.id === 'nova_blast') {
+        if (ability.id === 'nova_blast') {
             const radius = ability.radius;
             const circle = this.add.circle(this.player.x, this.player.y, 0, 0xffff00, 0.5);
             this.tweens.add({
@@ -863,15 +895,7 @@ export class GameScene extends Phaser.Scene {
                     if (died) {
                         enemy.setActive(false);
                         enemy.setVisible(false);
-                        enemy.body.stop();
-                        enemy.setPosition(-200, -200);
-                        this.particleEmitter.emitParticleAt(enemy.x, enemy.y, 10);
-                        this.increaseCombo();
-                        this.player.gainXp(CONFIG.XP.ORB_VALUE);
-                    } else {
-                        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, enemy.x, enemy.y);
-                        enemy.body.velocity.x += Math.cos(angle) * ability.force;
-                        enemy.body.velocity.y += Math.sin(angle) * ability.force;
+                        if (enemy.body) enemy.body.stop();
                     }
                 }
             });

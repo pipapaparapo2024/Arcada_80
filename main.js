@@ -7,8 +7,8 @@ import { GameOverScene } from './src/scenes/GameOverScene.js';
 
 const config = {
     type: Phaser.AUTO,
-    width: 1600,
-    height: 1200,
+    width: 400,
+    height: 300,
     parent: 'game-container',
     backgroundColor: '#000000',
     scene: [BootScene, PreloadScene, MenuScene, GameScene, LevelUpScene, GameOverScene],
@@ -16,13 +16,19 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: true
+            debug: false // Disable debug for production look
         }
     },
     pixelArt: true,
+    roundPixels: true,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    render: {
+        antialias: false,
+        pixelArt: true,
+        roundPixels: true
     }
 };
 

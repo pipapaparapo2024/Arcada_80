@@ -1,7 +1,7 @@
 export const CONFIG = {
     // Game Settings
-    GAME_WIDTH: 1600,
-    GAME_HEIGHT: 1200,
+    GAME_WIDTH: 400,
+    GAME_HEIGHT: 300,
     
     // Difficulty Settings
     DIFFICULTY: {
@@ -91,13 +91,6 @@ export const CONFIG = {
 
     // Active Abilities
     ABILITIES: {
-        TIME_SLOW: {
-            id: 'time_slow',
-            name: 'Time Slow',
-            cooldown: 15000,
-            duration: 5000,
-            factor: 0.3 // Enemy speed multiplier
-        },
         NOVA_BLAST: {
             id: 'nova_blast',
             name: 'Nova Blast',
@@ -151,14 +144,13 @@ export const CONFIG = {
             condition: (player) => player.weapon.config.id !== 'ricochet',
             apply: (player) => { player.equipWeapon('ricochet'); }
         },
-        // Active Abilities
         {
-            id: 'ability_time_slow',
-            name: 'Time Slow',
-            description: 'Ability (Q): Slow Motion',
-            condition: (player) => !player.activeAbility || player.activeAbility.id !== 'time_slow',
-            apply: (player) => { player.equipAbility(CONFIG.ABILITIES.TIME_SLOW); }
+            id: 'drone_support',
+            name: 'Drone Support',
+            description: 'Summons a combat drone',
+            apply: (player) => { player.addDrone(); }
         },
+        // Active Abilities
         {
             id: 'ability_nova',
             name: 'Nova Blast',

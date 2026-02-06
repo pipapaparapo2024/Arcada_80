@@ -36,11 +36,11 @@ export const ENEMY_TYPES = {
     BOSS: {
         texture: 'enemy_chaser',
         speed: 40,
-        hp: 100,
+        hp: 500,
         score: 5000,
-        scale: 5,
+        scale: 3,
         canShoot: true,
-        fireRate: 1000,
+        fireRate: 1500,
         boss: true
     },
     ASTEROID: {
@@ -229,17 +229,19 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     
     createDeathParticles() {
-        // Optimization: Skip particles during slow motion to prevent freeze
-        if (this.scene.isSlowMo) return;
-
-        // Simple particle effect using the enemy's texture or a particle texture
-        // We'll use the 'spark' texture we loaded, tinted to the enemy's color?
-        // Or just use the enemy texture scaled down?
-        // Let's use a particle emitter manager created in the scene, or create a temp one here.
-        // Creating a manager every death is expensive. Ideally, the scene handles this.
-        // But for now, let's just emit a simple burst if the scene has an emitter.
-        
-        if (this.scene.particleEmitter) {
+        if (this.scene.debrisEmitter) {
+            let color = 0xffffff;
+            
+            // Determine color based on type
+            if (this.config.boss) color = 0xaa00aa;
+            else if (this.config.kamikaze) color = 0xffaa00;
+            else if (this.config.canShoot) color = 0xff0000;
+            else if (this.type === 'SPRINTER') color = 0x00ff00;
+            else color = 0x00ffff;
+            
+            this.scene.debrisEmitter.setParticleTint(color);
+            this.scene.debrisEmitter.explode(8, this.x, this.y);
+        } else if (this.scene.particleEmitter) {
             this.scene.particleEmitter.explode(10, this.x, this.y);
         }
     }

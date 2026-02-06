@@ -75,11 +75,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             repeat: -1,
             ease: 'Sine.easeInOut'
         });
+
+        // Retro Engine Flame
+        this.engineFlame = scene.add.sprite(x, y, 'fire').setDepth(this.depth - 1);
+        this.engineFlame.setVisible(false);
     }
 
     update(time, delta) {
         this.updateHpBar();
         this.updateAbilityBar(time);
+        
+        // Update Engine Flame
+        const rad = this.rotation;
+        const offset = 25;
+        this.engineFlame.setPosition(
+            this.x - Math.cos(rad) * offset,
+            this.y - Math.sin(rad) * offset
+        );
+        this.engineFlame.setRotation(this.rotation + Math.PI/2);
+        
+        // Flicker Logic (2 frames simulation)
+        const flicker = Math.floor(time / 50) % 2;
+        this.engineFlame.setFrame(0); // Assuming single frame texture, we change scale/alpha
+        this.engineFlame.setScale(flicker === 0 ? 0.6 : 0.4);
+        this.engineFlame.setAlpha(flicker === 0 ? 0.8 : 0.5);
+        this.engineFlame.setVisible(!this.isDead);
 
         // Magnet Logic (Active if skill taken)
         if (this.magnetActive && this.scene && this.scene.xpOrbs) {
@@ -104,6 +124,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleShooting(time);
         this.checkDangerZone(delta);
         this.handleAbility(time);
+        this.updateDrones(time);
     }
 
     checkDangerZone(delta) {
@@ -208,6 +229,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         
         this.emit('hpChanged', this.hp, this.maxHp);
         this.updateHpBar();
+        
+        // Emit damage event for visual effects (static noise, shake)
+        this.emit('damage', amount);
 
         if (!silent) {
             this.invulnerable = true;
