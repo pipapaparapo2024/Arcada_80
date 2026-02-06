@@ -31,6 +31,7 @@ export const Lang = {
         SKILL_ABILITY_NOVA: 'Nova Blast',
         SKILL_ABILITY_NOVA_DESC: 'Ability (Q): Area Blast',
         BOSS_WARNING: 'LEVEL UP: ENEMIES FASTER!',
+        BOSS_APPROACHING: 'WARNING: GIANT BOSS APPROACHING!',
         DIFF_EASY: 'Easy',
         DIFF_NORMAL: 'Normal',
         DIFF_HARDCORE: 'Hardcore'
@@ -67,6 +68,7 @@ export const Lang = {
         SKILL_ABILITY_NOVA: 'Сверхновая',
         SKILL_ABILITY_NOVA_DESC: 'Способность (Q): Взрыв вокруг',
         BOSS_WARNING: 'УРОВЕНЬ ПОВЫШЕН: ВРАГИ БЫСТРЕЕ!',
+        BOSS_APPROACHING: 'ВНИМАНИЕ: ПРИБЛИЖАЕТСЯ БОСС!',
         DIFF_EASY: 'Легко',
         DIFF_NORMAL: 'Норма',
         DIFF_HARDCORE: 'Хардкор'

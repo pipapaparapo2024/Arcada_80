@@ -4,7 +4,8 @@ export const POWERUP_TYPES = {
     HEAL: { color: 0x00ff00, label: 'HP', duration: 0 },
     SHIELD: { color: 0x00ffff, label: 'SHIELD', duration: 5000 },
     AMMO: { color: 0xffff00, label: 'AMMO', duration: 0 },
-    MAGNET: { color: 0xff00ff, label: 'MAGNET', duration: 10000 }
+    MAGNET: { color: 0xff00ff, label: 'MAGNET', duration: 10000 },
+    DOUBLE_DAMAGE: { color: 0xff0000, label: 'X2 DAMAGE', duration: 10000 }
 };
 
 export class Powerup extends Phaser.Physics.Arcade.Sprite {
@@ -61,8 +62,7 @@ export class Powerup extends Phaser.Physics.Arcade.Sprite {
         // Effect
         switch (this.typeKey) {
             case 'HEAL':
-                player.hp = Math.min(player.hp + 20, player.maxHp);
-                player.emit('hpChanged', player.hp, player.maxHp);
+                player.heal(20);
                 break;
             case 'AMMO':
                 player.ammo = CONFIG.PLAYER.AMMO_MAX;
@@ -82,6 +82,14 @@ export class Powerup extends Phaser.Physics.Arcade.Sprite {
                 player.magnetActive = true;
                 this.scene.time.delayedCall(this.config.duration, () => {
                     player.magnetActive = false;
+                });
+                break;
+            case 'DOUBLE_DAMAGE':
+                player.damageMultiplier = 2;
+                player.setTint(0xff0000); // Visual indicator
+                this.scene.time.delayedCall(this.config.duration, () => {
+                    player.damageMultiplier = 1;
+                    player.clearTint();
                 });
                 break;
         }

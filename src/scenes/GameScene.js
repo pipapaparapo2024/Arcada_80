@@ -58,15 +58,33 @@ export class GameScene extends Phaser.Scene {
                 .setAlpha(0.5);
 
             // Vignette (simple radial gradient overlay)
-            if (!this.textures.exists('vignette')) {
-                const vig = this.make.graphics({x:0, y:0, add: false});
-                vig.fillStyle(0x000000, 1);
-                vig.fillRect(0,0,800,600);
-                const texture = vig.generateTexture('vignette_base', 800, 600);
-                // Note: Real vignette usually needs a shader or a sprite with a transparent center gradient.
-                // For now, let's use a simple overlay image if available, or skip complex generation to avoid overhead.
-                // We'll stick to scanlines as the primary "TV effect" fallback.
-            }
+        if (!this.textures.exists('vignette')) {
+            const vig = this.make.graphics({x:0, y:0, add: false});
+            vig.fillStyle(0x000000, 1);
+            vig.fillRect(0,0,800,600);
+            const texture = vig.generateTexture('vignette_base', 800, 600);
+        }
+        
+        // Add Vignette Overlay using an image with a mask or just a dark border
+        // Since we can't easily make a radial gradient texture without canvas manipulation,
+        // we'll use a "hole" approach with a big thick border
+        const vignette = this.add.graphics();
+        vignette.setScrollFactor(0).setDepth(999);
+        vignette.fillStyle(0x000000, 0.3);
+        // Draw 4 rectangles to form a frame? Or just one big rect with low alpha?
+        // User wants "vignetting in corners". 
+        // Let's try to make a radial texture on the fly
+        if (!this.textures.exists('vignette_texture')) {
+            const canvas = this.textures.createCanvas('vignette_texture', 800, 600);
+            const ctx = canvas.context;
+            const grd = ctx.createRadialGradient(400, 300, 200, 400, 300, 500);
+            grd.addColorStop(0, "transparent");
+            grd.addColorStop(1, "black");
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, 800, 600);
+            canvas.refresh();
+        }
+        this.add.image(400, 300, 'vignette_texture').setScrollFactor(0).setDepth(999).setAlpha(0.6);
         }
 
         // HUD Container
@@ -174,6 +192,14 @@ export class GameScene extends Phaser.Scene {
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         this.difficultyTimer = 0;
         this.bossTimer = 0; // Timer for boss spawn
+
+        // Boss Spawn Timer (Every 5 minutes)
+        this.time.addEvent({
+            delay: 60000 * 5, // 5 minutes
+            callback: this.spawnBoss,
+            callbackScope: this,
+            loop: true
+        });
 
         this.spawnEvent = this.time.addEvent({
             delay: this.enemySpawnDelay,
@@ -298,6 +324,9 @@ export class GameScene extends Phaser.Scene {
 
     update(time, delta) {
         if (this.isPaused) return;
+
+        // Sync UI strictly with data
+        this.hpText.setText(`HP: ${Math.max(0, Math.ceil(this.player.hp))}`);
 
         if (this.isGameOver) {
             this.trailEmitter.stop(); // Stop trail on death
@@ -471,8 +500,40 @@ export class GameScene extends Phaser.Scene {
             this.dangerOverlay.lineStyle(10, 0xff0000, alpha);
             this.dangerOverlay.strokeRect(0, 0, CONFIG.GAME_WIDTH, CONFIG.GAME_HEIGHT);
             
-            // Optional: Draw 'DANGER' text or arrows?
-            // For now, pulsing border is good.
+            // Warning Text
+            if (!this.warningText) {
+                this.warningText = this.add.text(this.scale.width/2, this.scale.height/2 - 200, 'WARNING: OUT OF ZONE!', {
+                    font: '48px Arial', fill: '#ff0000', stroke: '#000000', strokeThickness: 6
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+                
+                this.tweens.add({
+                    targets: this.warningText, alpha: 0.2, duration: 500, yoyo: true, loop: -1
+                });
+            }
+            this.warningText.setVisible(true);
+            this.warningText.setPosition(this.scale.width/2, this.scale.height/2 - 200);
+
+            // Damage Timer
+            if (!this.outOfBoundsTimer) {
+                this.outOfBoundsTimer = this.time.addEvent({
+                    delay: 500,
+                    callback: () => {
+                        if (this.isGameOver || this.isPaused) return;
+                        this.player.takeDamage(5);
+                        this.cameras.main.flash(100, 255, 0, 0);
+                    },
+                    loop: true
+                });
+            }
+        } else {
+            // Clear warning
+            if (this.warningText) this.warningText.setVisible(false);
+            
+            // Stop timer
+            if (this.outOfBoundsTimer) {
+                this.outOfBoundsTimer.remove();
+                this.outOfBoundsTimer = null;
+            }
         }
     }
 
@@ -486,21 +547,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     increaseCombo() {
-        this.combo++;
-        this.comboTimer = CONFIG.COMBO.RESET_TIME;
-        
-        const newMult = 1 + Math.floor(this.combo / CONFIG.COMBO.MULTIPLIER_STEP);
-        if (newMult > this.comboMultiplier) {
-            this.comboMultiplier = newMult;
-            const text = this.add.text(this.scale.width/2, 200, `${this.comboMultiplier}x ${this.lang.COMBO}!`, {
-                font: '64px Arial', fill: '#ffff00', stroke: '#ff0000', strokeThickness: 6
-            }).setOrigin(0.5).setScrollFactor(0);
-            
-            this.tweens.add({
-                targets: text, scale: 1.5, alpha: 0, duration: 1000,
-                onComplete: () => text.destroy()
-            });
-        }
+        this.updateCombo();
     }
 
     resetCombo() {
@@ -566,7 +613,7 @@ export class GameScene extends Phaser.Scene {
         } else {
             bullet.setActive(false);
             bullet.setVisible(false);
-            bullet.body.stop();
+            if (bullet.body) bullet.body.stop();
             bullet.setPosition(-100, -100);
         }
 
@@ -575,7 +622,7 @@ export class GameScene extends Phaser.Scene {
         if (died) {
             enemy.setActive(false);
             enemy.setVisible(false);
-            enemy.body.stop();
+            if (enemy.body) enemy.body.stop();
             enemy.setPosition(-200, -200);
             
             this.score += enemy.config.score * this.difficulty.scoreMult * this.comboMultiplier;
@@ -646,7 +693,7 @@ export class GameScene extends Phaser.Scene {
             boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', 1);
             
             // Boss warning
-            const text = this.add.text(this.scale.width/2, this.scale.height/2, 'BOSS APPROACHING!', {
+            const text = this.add.text(this.scale.width/2, this.scale.height/2, this.lang.BOSS_APPROACHING, {
                 font: '64px Arial', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6
             }).setOrigin(0.5).setScrollFactor(0);
             
@@ -750,11 +797,41 @@ export class GameScene extends Phaser.Scene {
     }
 
     gameOver() {
+        if (this.isGameOver) return;
         this.isGameOver = true;
         this.physics.pause();
         this.player.setTint(0x555555);
         this.gameOverText.setVisible(true);
-        this.gameOverText.setText(`${this.lang.GAME_OVER}\n${this.lang.SCORE}: ${Math.floor(this.score)}\n${this.lang.PRESS_R}`);
+        
+        const highScore = GameState.highScore || 0;
+        this.gameOverText.setText(
+            `${this.lang.GAME_OVER}\n` +
+            `${this.lang.SCORE}: ${Math.floor(this.score)}\n` +
+            `High Score: ${highScore}\n` +
+            `${this.lang.PRESS_R}`
+        );
         GameState.saveHighScore(Math.floor(this.score));
+    }
+
+    updateCombo() {
+        const now = this.time.now;
+        // Reset if more than 2 seconds passed since last kill
+        if (now - this.lastKillTime > 2000) {
+            this.combo = 0;
+            this.comboMultiplier = 1;
+        }
+
+        this.combo++;
+        this.lastKillTime = now;
+        this.comboTimer = 2000; // Visual timer
+
+        // Update Multiplier based on strict thresholds
+        if (this.combo >= 30) this.comboMultiplier = 4;
+        else if (this.combo >= 15) this.comboMultiplier = 3;
+        else if (this.combo >= 5) this.comboMultiplier = 2;
+        else this.comboMultiplier = 1;
+
+        // Show large multiplier text if changed
+        this.updateComboUI();
     }
 }

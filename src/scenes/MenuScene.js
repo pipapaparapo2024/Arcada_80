@@ -9,6 +9,13 @@ export class MenuScene extends Phaser.Scene {
     create() {
         this.createUI();
         // this.scale.on('resize', this.resize, this);
+
+        // Audio Context Unlock
+        this.input.once('pointerdown', () => {
+            if (this.sound.context.state === 'suspended') {
+                this.sound.context.resume();
+            }
+        });
     }
 
     resize(gameSize) {

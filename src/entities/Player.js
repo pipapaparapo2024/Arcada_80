@@ -41,6 +41,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             vampirism: false,
             kills: 0
         };
+        
+        this.damageMultiplier = 1;
 
         // State
         this.hp = CONFIG.PLAYER.HP;
@@ -104,24 +106,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         const bounds = this.scene.physics.world.bounds;
         const inBounds = bounds.contains(this.x, this.y);
         
-        if (!inBounds) {
-            // Take damage over time
-            const dmg = CONFIG.DANGER_ZONE.DAMAGE_PER_SEC * (delta / 1000);
-            this.takeDamage(dmg, true); // true = silent damage (no screen shake)
-            
-            // Pushback (Softened)
-            const centerX = bounds.width / 2;
-            const centerY = bounds.height / 2;
-            const angle = Phaser.Math.Angle.Between(this.x, this.y, centerX, centerY);
-            
-            // Reduced pushback to avoid teleportation feel
-            this.body.velocity.x += Math.cos(angle) * (CONFIG.DANGER_ZONE.PUSHBACK_FORCE * 0.1) * (delta/16);
-            this.body.velocity.y += Math.sin(angle) * (CONFIG.DANGER_ZONE.PUSHBACK_FORCE * 0.1) * (delta/16);
-
-            this.emit('dangerZone', true);
-        } else {
-            this.emit('dangerZone', false);
-        }
+        // Emit status for GameScene to handle UI and damage
+        this.emit('dangerZone', !inBounds);
     }
 
     handleMovement() {
@@ -216,6 +202,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.hp -= amount;
         if (this.hp < 0) this.hp = 0;
         
+        this.emit('hpChanged', this.hp, this.maxHp);
         this.updateHpBar();
 
         if (!silent) {
@@ -230,6 +217,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         if (this.hp <= 0) {
             this.scene.gameOver();
         }
+    }
+
+    heal(amount) {
+        this.hp = Math.min(this.hp + amount, this.maxHp);
+        this.emit('hpChanged', this.hp, this.maxHp);
+        this.updateHpBar();
     }
 
     updateHpBar() {

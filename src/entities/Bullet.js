@@ -13,11 +13,30 @@ export class Bullet extends Phaser.Physics.Arcade.Sprite {
         this.body.reset(x, y);
         this.setActive(true);
         this.setVisible(true);
-        this.setTint(tint || 0xffff00);
+        
+        // Set texture based on owner
+        if (isEnemy) {
+            this.setTexture('bullet_enemy');
+        } else {
+            this.setTexture('bullet');
+        }
+
+        // Apply tint only if provided and not white (0xffffff)
+        // If tint is undefined/null, clear it to show original sprite
+        if (tint && tint !== 0xffffff) {
+            this.setTint(tint);
+        } else {
+            this.clearTint();
+        }
+
         this.damage = damage; 
         this.isEnemyBullet = isEnemy;
         
         this.setRotation(rotation);
+        // Adjust for sprite orientation if needed (assuming sprites point right)
+        // If bullet6.png points up, we need rotation + PI/2
+        // Let's assume standard Phaser orientation (Right = 0)
+        
         this.scene.physics.velocityFromRotation(rotation, speed, this.body.velocity);
         
         // Reset properties

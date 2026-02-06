@@ -127,7 +127,7 @@ export const CONFIG = {
             langKey: 'TITAN_HEALTH',
             name: 'Titan Health',
             description: 'Max HP +20',
-            apply: (player) => { player.maxHp += 20; player.hp += 20; }
+            apply: (player) => { player.maxHp += 20; player.heal(20); }
         },
         // New Weapons
         {

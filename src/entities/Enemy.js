@@ -78,6 +78,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         if (this.config.kamikaze) {
             this.setTint(0xffaa00);
         }
+        this.isDead = false;
     }
 
     // Method to reset enemy when reusing from pool
@@ -85,6 +86,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.body.reset(x, y);
         this.setActive(true);
         this.setVisible(true);
+        this.isDead = false;
         
         // Use valid type
         const validKey = (type && ENEMY_TYPES[type]) ? type : 'CHASER';
@@ -111,6 +113,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         }
         if (this.config.kamikaze) {
             this.setTint(0xffaa00);
+        }
+        if (this.config.boss) {
+            this.setTint(0xaa00aa); // Purple for Boss
         }
         
         // Reset body size in case texture size changed
@@ -160,21 +165,34 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     
     explode() {
-        this.takeDamage(100, this.x, this.y); // Self-destruct
-        // Deal damage to player if close? Handled by collision overlap in scene
-        // But we can force it here?
-        // Better to let scene collision handle it, but for AoE we might need custom logic.
-        // For now, it just dies and deals contact damage via existing overlap.
+        // AoE Damage to player
+        if (this.scene && this.scene.player) {
+            const player = this.scene.player;
+            const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
+            if (dist < 200) { // Explosion radius
+                 player.takeDamage(20); 
+                 this.scene.cameras.main.shake(200, 0.01);
+            }
+        }
+        
+        this.takeDamage(this.hp); // Self-destruct
     }
 
     takeDamage(amount) {
+        if (this.isDead) return false;
         this.hp -= amount;
         
         // Flash red
         this.setTint(0xff0000);
+        
         if (this.flashTimer) this.flashTimer.remove();
         this.flashTimer = this.scene.time.delayedCall(100, () => {
-            if (this.active) this.clearTint();
+            if (this.active && !this.isDead) {
+                this.clearTint();
+                // Restore type tint
+                if (this.config.canShoot) this.setTint(0xff0000);
+                if (this.config.kamikaze) this.setTint(0xffaa00);
+            }
         });
 
         if (this.hp <= 0) {
@@ -185,6 +203,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     die() {
+        if (this.isDead) return;
+        this.isDead = true;
+
         // Play explosion sound only once
         if (this.scene && this.scene.explosionSound) {
              this.scene.explosionSound.play();
@@ -193,9 +214,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // Spawn particles
         this.createDeathParticles();
         
-        // Chance to drop powerup or XP (handled in GameScene for now)
-        
-        this.destroy();
+        // We DO NOT destroy here, we let the Scene handle pooling (setActive/setVisible)
+        // based on the return value of takeDamage
     }
     
     createDeathParticles() {

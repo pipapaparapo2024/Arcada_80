@@ -56,7 +56,7 @@ export class Weapon {
             const angle = this.player.rotation - Math.PI / 2;
             const spread = (Math.random() - 0.5) * this.config.spread;
             
-            bullet.fire(this.player.x, this.player.y, angle + spread, this.config.speed, this.config.damage, this.config.color);
+            bullet.fire(this.player.x, this.player.y, angle + spread, this.config.speed, this.config.damage * this.player.damageMultiplier, this.config.color);
         }
     }
 
@@ -69,7 +69,7 @@ export class Weapon {
             if (bullet) {
                 // Spread evenly
                 const spread = (i - (count - 1) / 2) * this.config.spread;
-                bullet.fire(this.player.x, this.player.y, baseAngle + spread, this.config.speed, this.config.damage, this.config.color);
+                bullet.fire(this.player.x, this.player.y, baseAngle + spread, this.config.speed, this.config.damage * this.player.damageMultiplier, this.config.color);
             }
         }
         
@@ -87,7 +87,7 @@ export class Weapon {
         const bullet = this.player.bullets.get(this.player.x, this.player.y);
         if (bullet) {
             const angle = this.player.rotation - Math.PI / 2;
-            bullet.fire(this.player.x, this.player.y, angle, this.config.speed * 2, this.config.damage, this.config.color);
+            bullet.fire(this.player.x, this.player.y, angle, this.config.speed * 2, this.config.damage * this.player.damageMultiplier, this.config.color);
             bullet.isPiercing = true; // Need to handle this in GameScene
             
             // Visual scale
@@ -100,7 +100,8 @@ export class Weapon {
         const bullet = this.player.bullets.get(this.player.x, this.player.y);
         if (bullet) {
             const angle = this.player.rotation - Math.PI / 2;
-            bullet.fire(this.player.x, this.player.y, angle, this.config.speed, this.config.damage, this.config.color);
+            // Pass null/0xffffff as color to preserve sprite original look
+            bullet.fire(this.player.x, this.player.y, angle, this.config.speed, this.config.damage * this.player.damageMultiplier, 0xffffff);
             
             // Enable bounce
             bullet.setCollideWorldBounds(true);
