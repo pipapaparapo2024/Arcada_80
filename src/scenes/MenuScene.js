@@ -30,38 +30,55 @@ export class MenuScene extends Phaser.Scene {
         const centerX = width / 2;
         const centerY = height / 2;
         const strings = Lang[GameState.lang];
+        
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
 
         // Background
         this.add.rectangle(0, 0, width, height, 0x111111).setOrigin(0);
         this.add.grid(centerX, centerY, width, height, 40, 40, 0x000000).setAltFillStyle(0x010101).setOutlineStyle(0x222222);
+        
+        // Scanlines
+        if (!this.textures.exists('scanlines')) {
+            const graphics = this.make.graphics({x: 0, y: 0, add: false});
+            graphics.fillStyle(0x000000, 0.2); 
+            graphics.fillRect(0, 0, 4, 2);
+            graphics.fillStyle(0x000000, 0);   
+            graphics.fillRect(0, 2, 4, 2);
+            graphics.generateTexture('scanlines', 4, 4);
+        }
+        this.add.tileSprite(0, 0, width, height, 'scanlines').setOrigin(0).setAlpha(0.1);
 
         // Title
         this.add.text(centerX, centerY - 80, 'ARCADA SHOOTER', {
-            font: '24px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '24px',
             fill: '#ffffff',
             stroke: '#00ffff',
             strokeThickness: 4
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         // High Score
         this.add.text(centerX, centerY - 50, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
-            font: '10px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '10px',
             fill: '#ffff00'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         // Difficulty Selection
         this.add.text(centerX, centerY - 20, strings.SELECT_DIFFICULTY, {
-            font: '8px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '8px',
             fill: '#aaaaaa'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
-        this.createDifficultyButtons(centerX, centerY);
+        this.createDifficultyButtons(centerX, centerY, fontStyle);
 
         // Volume Settings
         this.volumeText = this.add.text(centerX, centerY + 60, `${strings.VOLUME}: ${GameState.volume}%`, {
-            font: '8px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '8px',
             fill: '#aaaaaa'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
         this.volumeText.on('pointerdown', () => this.toggleVolume());
         this.volumeText.on('pointerover', () => this.volumeText.setFill('#ffffff'));
@@ -70,9 +87,10 @@ export class MenuScene extends Phaser.Scene {
         // Screen Shake Settings
         const shakeText = GameState.screenShake ? 'ON' : 'OFF';
         this.shakeText = this.add.text(centerX, centerY + 80, `Screen Shake: ${shakeText}`, {
-            font: '8px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '8px',
             fill: '#aaaaaa'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
         this.shakeText.on('pointerdown', () => {
             const newState = !GameState.screenShake;
@@ -87,9 +105,10 @@ export class MenuScene extends Phaser.Scene {
             .setInteractive({ useHandCursor: true });
         
         const startText = this.add.text(centerX, centerY + 110, strings.START_GAME, {
-            font: '12px "Press Start 2P"',
+            ...fontStyle,
+            fontSize: '12px',
             fill: '#000000'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         startBtn.on('pointerover', () => startBtn.setFillStyle(0x00dd00));
         startBtn.on('pointerout', () => startBtn.setFillStyle(0x00ff00));
@@ -97,22 +116,21 @@ export class MenuScene extends Phaser.Scene {
 
         // Language Toggle (Bottom Right)
         const langText = GameState.lang.toUpperCase();
-        const camW = this.cameras.main.width;
-        const camH = this.cameras.main.height;
         
-        const langBtn = this.add.text(camW - 20, camH - 20, langText, {
-            font: '10px "Press Start 2P"',
+        const langBtn = this.add.text(width - 20, height - 20, langText, {
+            ...fontStyle,
+            fontSize: '10px',
             fill: '#ffffff',
             stroke: '#000000',
             strokeThickness: 2
-        }).setOrigin(1, 1).setInteractive({ useHandCursor: true });
+        }).setOrigin(1, 1).setInteractive({ useHandCursor: true }).setResolution(1);
 
         langBtn.on('pointerdown', () => this.toggleLang());
         langBtn.on('pointerover', () => langBtn.setFill('#ffff00'));
         langBtn.on('pointerout', () => langBtn.setFill('#ffffff'));
     }
 
-    createDifficultyButtons(x, y) {
+    createDifficultyButtons(x, y, fontStyle) {
         const diffs = Object.keys(CONFIG.DIFFICULTY);
         const startY = y;
         const strings = Lang[GameState.lang];
@@ -131,9 +149,10 @@ export class MenuScene extends Phaser.Scene {
                 .setInteractive({ useHandCursor: true });
             
             const text = this.add.text(btnX, btnY, strings['DIFF_' + key], {
-                font: '8px "Press Start 2P"',
+                ...fontStyle,
+                fontSize: '8px',
                 fill: '#ffffff'
-            }).setOrigin(0.5);
+            }).setOrigin(0.5).setResolution(1);
 
             bg.on('pointerdown', () => this.selectDifficulty(key, bg));
 

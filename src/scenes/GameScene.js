@@ -211,8 +211,9 @@ export class GameScene extends Phaser.Scene {
             frequency: -1
         });
         
-        this.isSlowMo = false; // Flag for slow motion optimization
         this.bossActive = false; // Boss flag
+        this.bossLevels = [5, 10, 15]; // Boss spawn levels
+        this.spawnedBossLevels = []; // Track spawned bosses
 
         // Spawning Logic
         this.enemySpawnDelay = 2000;
@@ -401,11 +402,10 @@ export class GameScene extends Phaser.Scene {
             this.difficultyTimer = 0;
         }
         
-        // Boss Timer
-        this.bossTimer += delta;
-        if (this.bossTimer >= 300000) { // 5 minutes
+        // Boss Spawn Logic (Levels 5, 10, 15)
+        if (this.player && this.bossLevels.includes(this.player.level) && !this.spawnedBossLevels.includes(this.player.level)) {
             this.spawnBoss();
-            this.bossTimer = 0;
+            this.spawnedBossLevels.push(this.player.level);
         }
         
         // Combo Timer
@@ -802,19 +802,25 @@ export class GameScene extends Phaser.Scene {
     spawnBoss() {
         if (this.bossActive) return;
         
+        // Find a free enemy or create one
         const boss = this.enemies.get();
         if (boss) {
             this.bossActive = true;
-            this.bossSpawnedForLevel = true;
-            
-            // Spawn at top center
-            boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', 1);
+            // Spawn boss: x, y, type, level
+            // We use 'BOSS' type which should be handled in Enemy.js
+            boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', this.player.level);
+            boss.setScale(3); // Explicitly set scale as requested
             
             // Boss warning
-            const text = this.add.text(this.scale.width/2, this.scale.height/2, this.lang.BOSS_APPROACHING, {
-                font: '32px "Press Start 2P"', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6
+            const text = this.add.text(this.scale.width/2, this.scale.height/2, 'BOSS APPROACHING!', {
+                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', 
+                fontSize: '32px',
+                fill: '#ff0000', 
+                stroke: '#ffffff', 
+                strokeThickness: 6
             }).setOrigin(0.5).setScrollFactor(0);
             
+            // Text effect
             this.tweens.add({
                 targets: text,
                 alpha: 0,

@@ -22,14 +22,16 @@ export class GameOverScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
         const lang = Lang[GameState.lang];
+        
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
 
         // Dark Overlay
         this.add.rectangle(0, 0, width, height, 0x000000, 0.8).setOrigin(0);
 
         // Title
         this.add.text(width/2, height/2 - 150, lang.GAME_OVER, {
-            font: '64px Arial', fill: '#ff0000', stroke: '#000000', strokeThickness: 6
-        }).setOrigin(0.5);
+            ...fontStyle, fontSize: '64px', fill: '#ff0000', stroke: '#000000', strokeThickness: 6
+        }).setOrigin(0.5).setResolution(1);
 
         // Stats
         const statsText = `
@@ -39,14 +41,14 @@ ${lang.LEVEL}: ${this.level}
         `;
 
         this.add.text(width/2, height/2, statsText, {
-            font: '32px Arial', fill: '#ffffff', align: 'center', stroke: '#000000', strokeThickness: 4
-        }).setOrigin(0.5);
+            ...fontStyle, fontSize: '32px', fill: '#ffffff', align: 'center', stroke: '#000000', strokeThickness: 4
+        }).setOrigin(0.5).setResolution(1);
 
         if (this.newHighScore) {
             this.add.text(width/2, height/2 + 100, 'NEW HIGH SCORE!', {
-                font: '32px Arial', fill: '#ffff00', fontStyle: 'bold'
+                ...fontStyle, fontSize: '32px', fill: '#ffff00', fontStyle: 'bold'
             }).setOrigin(0.5).setAlpha(0).setScale(1.5)
-            .setTint(0xffff00);
+            .setTint(0xffff00).setResolution(1);
             
             // Simple tween for new high score
             this.tweens.add({
@@ -60,8 +62,8 @@ ${lang.LEVEL}: ${this.level}
 
         // Restart Prompt
         const restartText = this.add.text(width/2, height/2 + 200, 'PRESS SPACE OR CLICK TO RESTART', {
-            font: '24px Arial', fill: '#aaaaaa'
-        }).setOrigin(0.5);
+            ...fontStyle, fontSize: '24px', fill: '#aaaaaa'
+        }).setOrigin(0.5).setResolution(1);
 
         this.tweens.add({
             targets: restartText,

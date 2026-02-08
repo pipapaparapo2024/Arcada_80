@@ -139,7 +139,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     update(time, delta) {
         if (!this.active) return;
         
-        if (this.target && !this.isKnockedBack) {
+        if (this.config.boss) {
+            // Boss Logic: Zigzag from top
+            this.y += this.currentSpeed * delta * 0.001; // Move down slowly
+            this.x += Math.sin(time * 0.002) * 2; // Zigzag
+            
+            // Clamp to screen
+            if (this.x < 50) this.x = 50;
+            if (this.x > CONFIG.GAME_WIDTH - 50) this.x = CONFIG.GAME_WIDTH - 50;
+            
+            // Shooting
+            if (time > this.shootTimer) {
+                this.shoot(time);
+            }
+        } else if (this.target && !this.isKnockedBack) {
             // Move towards target
             this.scene.physics.moveToObject(this, this.target, this.currentSpeed);
             
@@ -166,10 +179,24 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         
         // Create bullet (Scene must handle bullet group)
         if (this.scene.enemyBullets) {
-            const bullet = this.scene.enemyBullets.get();
-            if (bullet) {
-                const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
-                bullet.fire(this.x, this.y, angle, 400, 10, 0xff0000, true);
+            if (this.config.boss) {
+                // Fan Shot (3 bullets)
+                const angles = [0, -0.2, 0.2]; // Radians offset
+                const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
+                
+                angles.forEach(offset => {
+                    const bullet = this.scene.enemyBullets.get();
+                    if (bullet) {
+                        bullet.fire(this.x, this.y, baseAngle + offset, 400, 10, 0xff00ff, true);
+                        bullet.setScale(1.5); // Bigger bullets for boss
+                    }
+                });
+            } else {
+                const bullet = this.scene.enemyBullets.get();
+                if (bullet) {
+                    const angle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
+                    bullet.fire(this.x, this.y, angle, 400, 10, 0xff0000, true);
+                }
             }
         }
     }

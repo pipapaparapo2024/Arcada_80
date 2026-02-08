@@ -12,6 +12,8 @@ export class LevelUpScene extends Phaser.Scene {
         this.player = data.player;
         const { width, height } = this.scale;
         
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+
         // Semi-transparent overlay with Retro Grid
         this.overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.9).setOrigin(0);
         this.grid = this.add.grid(width/2, height/2, width, height, 80, 80, 0x000000)
@@ -21,16 +23,18 @@ export class LevelUpScene extends Phaser.Scene {
 
         // Title
         this.titleText = this.add.text(width / 2, 100, this.lang.LEVEL_UP, {
-            font: '64px Arial',
+            ...fontStyle,
+            fontSize: '64px',
             fill: '#ffff00',
             stroke: '#ff0000',
             strokeThickness: 4
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         this.subText = this.add.text(width / 2, 180, this.lang.CHOOSE_UPGRADE, {
-            font: '32px Arial',
+            ...fontStyle,
+            fontSize: '32px',
             fill: '#ffffff'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         // Pick 3 random skills (filtering based on conditions)
         const availableSkills = CONFIG.SKILLS.filter(s => !s.condition || s.condition(this.player));
@@ -38,13 +42,13 @@ export class LevelUpScene extends Phaser.Scene {
         
         this.skillCards = [];
         skills.forEach((skill, index) => {
-            this.createSkillCard(width / 2, 300 + (index * 150), skill);
+            this.createSkillCard(width / 2, 300 + (index * 150), skill, fontStyle);
         });
 
         this.scale.on('resize', this.resize, this);
     }
 
-    createSkillCard(x, y, skill) {
+    createSkillCard(x, y, skill, fontStyle) {
         const bg = this.add.rectangle(0, 0, 400, 120, 0x333333)
             .setInteractive({ useHandCursor: true });
         
@@ -63,17 +67,19 @@ export class LevelUpScene extends Phaser.Scene {
 
         // Text
         const nameText = this.add.text(0, -20, name, {
-            font: '24px Arial',
+            ...fontStyle,
+            fontSize: '24px',
             fill: '#00ff00',
             fontStyle: 'bold'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         const descText = this.add.text(0, 20, desc, {
-            font: '18px Arial',
+            ...fontStyle,
+            fontSize: '18px',
             fill: '#aaaaaa',
             stroke: '#000000',
             strokeThickness: 2
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setResolution(1);
 
         const container = this.add.container(x, y, [bg, nameText, descText]);
         this.skillCards.push(container);

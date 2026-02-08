@@ -1,7 +1,7 @@
 export const CONFIG = {
     // Game Settings
-    GAME_WIDTH: 400,
-    GAME_HEIGHT: 300,
+    GAME_WIDTH: 800,
+    GAME_HEIGHT: 600,
     
     // Difficulty Settings
     DIFFICULTY: {

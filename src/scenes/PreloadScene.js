@@ -87,6 +87,7 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     create() {
+        console.log('PreloadScene complete. Starting MenuScene.');
         this.scene.start('MenuScene');
     }
 }
