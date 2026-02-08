@@ -12,6 +12,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        console.log('GameScene.create started');
         // Safety Check: Ensure critical assets exist
         const criticalTextures = ['player', 'bullet', 'enemy_chaser', 'enemy_sprinter', 'background', 'spark', 'fire', 'xp_orb'];
         criticalTextures.forEach(key => {
@@ -150,7 +151,7 @@ export class GameScene extends Phaser.Scene {
             });
             
             // Screen Shake
-            this.cameras.main.shake(200, 0.02);
+            if (GameState.screenShake) this.cameras.main.shake(200, 0.02);
         });
         
         // Combo System
@@ -295,6 +296,8 @@ export class GameScene extends Phaser.Scene {
             alpha: { start: 1, end: 0 },
             emitting: false
         });
+        
+        console.log('GameScene.create complete');
     }
 
     createPauseUI() {
@@ -743,8 +746,8 @@ export class GameScene extends Phaser.Scene {
             enemy.setPosition(-200, -200);
             
             // Safety check for sound stop if requested by user logic
-            if (this.enemyExplosionSound && this.enemyExplosionSound.stop) {
-                 this.enemyExplosionSound.stop();
+            if (this.explosionSound && this.explosionSound.stop) {
+                 this.explosionSound.stop();
             }
 
             this.score += enemy.config.score * this.difficulty.scoreMult * this.comboMultiplier;
