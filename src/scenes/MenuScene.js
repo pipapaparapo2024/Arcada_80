@@ -117,7 +117,7 @@ export class MenuScene extends Phaser.Scene {
         // Language Toggle (Bottom Right)
         const langText = GameState.lang.toUpperCase();
         
-        const langBtn = this.add.text(width - 20, height - 20, langText, {
+        const langBtn = this.add.text(this.cameras.main.width - 60, this.cameras.main.height - 40, langText, {
             ...fontStyle,
             fontSize: '10px',
             fill: '#ffffff',

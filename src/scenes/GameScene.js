@@ -160,12 +160,12 @@ export class GameScene extends Phaser.Scene {
         this.comboTimerEvent = null;
 
         this.comboText = this.add.text(this.scale.width - 20, 100, '', {
-            fontFamily: '"Press Start 2P", monospace',
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"',
             fontSize: '32px',
             color: '#ff00ff',
             stroke: '#000000',
             strokeThickness: 4
-        }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(100).setResolution(1);
         
         this.score = 0;
         this.isGameOver = false;
@@ -390,8 +390,8 @@ export class GameScene extends Phaser.Scene {
         this.trailEmitter.followOffset.set(offX, offY);
         
         // Parallax
-        this.starsBg.tilePositionX += 0.1;
-        this.starsBg.tilePositionY += 0.05;
+        this.starsBg.tilePositionX = Math.round(this.starsBg.tilePositionX + 0.1);
+        this.starsBg.tilePositionY = Math.round(this.starsBg.tilePositionY + 0.05);
         // this.background.tilePositionX += 0.5;
         // this.background.tilePositionY += 0.2;
         
@@ -402,8 +402,8 @@ export class GameScene extends Phaser.Scene {
             this.difficultyTimer = 0;
         }
         
-        // Boss Spawn Logic (Levels 5, 10, 15)
-        if (this.player && this.bossLevels.includes(this.player.level) && !this.spawnedBossLevels.includes(this.player.level)) {
+        // Boss Spawn Logic (Every 5 Levels)
+        if (this.player && this.player.level % 5 === 0 && !this.spawnedBossLevels.includes(this.player.level)) {
             this.spawnBoss();
             this.spawnedBossLevels.push(this.player.level);
         }
@@ -463,55 +463,57 @@ export class GameScene extends Phaser.Scene {
 
     createUI() {
         const { width, height } = this.scale;
+        
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
 
         // Scanlines (CRT Effect)
         this.scanlines = this.add.tileSprite(0, 0, width, height, 'scanlines')
             .setOrigin(0, 0)
             .setScrollFactor(0)
-            .setAlpha(0.15)
+            .setAlpha(0.1)
             .setDepth(1900);
 
         // Ammo
         this.ammoText = this.add.text(10, 10, `${this.lang.AMMO}: ${CONFIG.PLAYER.AMMO_MAX}`, { 
-            font: '10px "Press Start 2P"', fill: '#ffffff', stroke: '#000000', strokeThickness: 2 
-        }).setScrollFactor(0);
+            ...fontStyle, fontSize: '10px', fill: '#ffffff', stroke: '#000000', strokeThickness: 2 
+        }).setScrollFactor(0).setResolution(1);
         
         this.reloadText = this.add.text(width/2, height/2, this.lang.RELOADING, { 
-            font: '16px "Press Start 2P"', fill: '#ff0000', stroke: '#000000', strokeThickness: 3 
-        }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
+            ...fontStyle, fontSize: '16px', fill: '#ff0000', stroke: '#000000', strokeThickness: 3 
+        }).setScrollFactor(0).setOrigin(0.5).setVisible(false).setResolution(1);
 
         // HP
         this.hpText = this.add.text(10, 25, `HP: ${CONFIG.PLAYER.HP}`, { 
-            font: '10px "Press Start 2P"', fill: '#00ff00', stroke: '#000000', strokeThickness: 2 
-        }).setScrollFactor(0);
+            ...fontStyle, fontSize: '10px', fill: '#00ff00', stroke: '#000000', strokeThickness: 2 
+        }).setScrollFactor(0).setResolution(1);
 
         // Ability Cooldown Bar
         this.abilityBarBg = this.add.rectangle(10, 45, 100, 6, 0x333333).setScrollFactor(0).setOrigin(0, 0);
         this.abilityBarFill = this.add.rectangle(10, 45, 0, 6, 0x00ff00).setScrollFactor(0).setOrigin(0, 0);
-        this.abilityIcon = this.add.text(115, 42, '', { font: '8px "Press Start 2P"', fill: '#ffffff' }).setScrollFactor(0);
+        this.abilityIcon = this.add.text(115, 42, '', { ...fontStyle, fontSize: '8px', fill: '#ffffff' }).setScrollFactor(0).setResolution(1);
 
         // Score
         this.scoreText = this.add.text(10, 60, `${this.lang.SCORE}: 0`, { 
-            font: '10px "Press Start 2P"', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
-        }).setScrollFactor(0);
+            ...fontStyle, fontSize: '10px', fill: '#ffff00', stroke: '#000000', strokeThickness: 2 
+        }).setScrollFactor(0).setResolution(1);
 
         // Combo
         this.comboText = this.add.text(10, 75, '', { 
-            font: '12px "Press Start 2P"', fill: '#00ffff', stroke: '#000000', strokeThickness: 4 
-        }).setScrollFactor(0);
+            ...fontStyle, fontSize: '12px', fill: '#00ffff', stroke: '#000000', strokeThickness: 4 
+        }).setScrollFactor(0).setResolution(1);
 
         // XP Bar
         const barY = height - 15;
         this.xpBarBg = this.add.rectangle(width/2, barY, width - 20, 10, 0x000000).setScrollFactor(0).setStrokeStyle(1, 0x333333);
         this.xpBarFill = this.add.rectangle(10, barY, 0, 10, 0x00ffff).setScrollFactor(0).setOrigin(0, 0.5);
         this.levelText = this.add.text(width/2, barY - 12, `${this.lang.LEVEL} 1`, {
-            font: '8px "Press Start 2P"', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
-        }).setScrollFactor(0).setOrigin(0.5);
+            ...fontStyle, fontSize: '8px', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
+        }).setScrollFactor(0).setOrigin(0.5).setResolution(1);
 
         // Game Over
         this.gameOverText = this.add.text(width/2, height/2, this.lang.GAME_OVER, { 
-            font: '24px "Press Start 2P"', fill: '#ff0000', align: 'center', stroke: '#000000', strokeThickness: 4
-        }).setScrollFactor(0).setOrigin(0.5).setVisible(false);
+            ...fontStyle, fontSize: '24px', fill: '#ff0000', align: 'center', stroke: '#000000', strokeThickness: 4
+        }).setScrollFactor(0).setOrigin(0.5).setVisible(false).setResolution(1);
 
         // Listeners
         this.player.on('ammoChanged', (ammo) => this.ammoText.setText(`${this.lang.AMMO}: ${ammo}/${CONFIG.PLAYER.AMMO_MAX}`));
@@ -591,6 +593,8 @@ export class GameScene extends Phaser.Scene {
         // Redraw base bounds
         this.drawWorldBounds();
         
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+
         if (active) {
             const alpha = 0.5 + Math.sin(this.time.now / 100) * 0.3;
             this.dangerOverlay.lineStyle(10, 0xff0000, alpha);
@@ -599,8 +603,8 @@ export class GameScene extends Phaser.Scene {
             // Warning Text
             if (!this.warningText) {
                 this.warningText = this.add.text(CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2, 'WARNING: OUT OF ZONE!', {
-                    font: '16px "Press Start 2P"', fill: '#ff0000', stroke: '#000000', strokeThickness: 4, align: 'center'
-                }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+                    ...fontStyle, fontSize: '16px', fill: '#ff0000', stroke: '#000000', strokeThickness: 4, align: 'center'
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(2000).setResolution(1);
                 
                 this.tweens.add({
                     targets: this.warningText, alpha: 0.2, duration: 500, yoyo: true, loop: -1
@@ -701,8 +705,8 @@ export class GameScene extends Phaser.Scene {
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         
         const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, this.lang.BOSS_WARNING, { 
-            font: '50px Arial', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
-        }).setOrigin(0.5).setScrollFactor(0);
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', fontSize: '50px', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
+        }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
         
         this.tweens.add({
             targets: text, alpha: 0, scale: 1.5, duration: 3000,
@@ -730,7 +734,7 @@ export class GameScene extends Phaser.Scene {
             if (enemy.config.boss) {
                 this.bossActive = false;
                 // Add big explosion or effect
-                this.cameras.main.shake(500, 0.05);
+                if (GameState.screenShake) this.cameras.main.shake(500, 0.05);
             }
 
             enemy.setActive(false);
@@ -738,6 +742,11 @@ export class GameScene extends Phaser.Scene {
             if (enemy.body) enemy.body.stop();
             enemy.setPosition(-200, -200);
             
+            // Safety check for sound stop if requested by user logic
+            if (this.enemyExplosionSound && this.enemyExplosionSound.stop) {
+                 this.enemyExplosionSound.stop();
+            }
+
             this.score += enemy.config.score * this.difficulty.scoreMult * this.comboMultiplier;
             this.scoreText.setText(`${this.lang.SCORE}: ${Math.floor(this.score)}`);
             this.updateCombo(); // Changed from increaseCombo to updateCombo
@@ -746,8 +755,8 @@ export class GameScene extends Phaser.Scene {
             this.player.onKill();
 
             const xpText = this.add.text(enemy.x, enemy.y, `+${CONFIG.XP.ORB_VALUE * this.comboMultiplier}`, {
-                font: '20px Arial', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
-            }).setOrigin(0.5);
+                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', fontSize: '20px', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
+            }).setOrigin(0.5).setResolution(1);
             
             this.tweens.add({
                 targets: xpText, y: enemy.y - 50, alpha: 0, duration: 1000,
@@ -757,7 +766,7 @@ export class GameScene extends Phaser.Scene {
             // Removed manual explosion sound play here as it is now handled in Enemy.die()
             // if (GameState.volume > 0) this.explosionSound.play();
             
-            this.cameras.main.shake(100, 0.005);
+            if (GameState.screenShake) this.cameras.main.shake(100, 0.005);
             this.particleEmitter.emitParticleAt(enemy.x, enemy.y, 10);
             
             // Shockwave Effect
@@ -809,6 +818,7 @@ export class GameScene extends Phaser.Scene {
             // Spawn boss: x, y, type, level
             // We use 'BOSS' type which should be handled in Enemy.js
             boss.spawn(CONFIG.GAME_WIDTH/2, -100, 'BOSS', this.player.level);
+            boss.setTarget(this.player); // Ensure boss tracks player
             boss.setScale(3); // Explicitly set scale as requested
             
             // Boss warning
@@ -818,7 +828,7 @@ export class GameScene extends Phaser.Scene {
                 fill: '#ff0000', 
                 stroke: '#ffffff', 
                 strokeThickness: 6
-            }).setOrigin(0.5).setScrollFactor(0);
+            }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
             
             // Text effect
             this.tweens.add({

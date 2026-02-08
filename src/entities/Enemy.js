@@ -181,7 +181,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         if (this.scene.enemyBullets) {
             if (this.config.boss) {
                 // Fan Shot (3 bullets)
-                const angles = [0, -0.2, 0.2]; // Radians offset
+                // -15, 0, 15 degrees in radians: -0.26, 0, 0.26
+                const angles = [-0.26, 0, 0.26]; 
                 const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
                 
                 angles.forEach(offset => {
