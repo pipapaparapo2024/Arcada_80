@@ -128,6 +128,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             this.setTint(0xaa00aa); // Purple for Boss
         }
         
+        // Asteroid Logic
+        if (this.type === 'ASTEROID') {
+            const angle = Phaser.Math.Between(0, 360);
+            this.scene.physics.velocityFromAngle(angle, this.currentSpeed, this.body.velocity);
+            this.setAngularVelocity(Phaser.Math.Between(-50, 50));
+        }
+
         // Reset body size in case texture size changed
         this.body.setSize(this.width, this.height);
     }
@@ -152,6 +159,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             if (time > this.shootTimer) {
                 this.shoot(time);
             }
+        } else if (this.type === 'ASTEROID') {
+            // Just drift (physics handles it)
+            this.scene.physics.world.wrap(this, 50); // Wrap around screen
         } else if (this.target && !this.isKnockedBack) {
             // Move towards target
             this.scene.physics.moveToObject(this, this.target, this.currentSpeed);
@@ -218,6 +228,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     takeDamage(amount) {
         if (this.isDead) return false;
+        
+        if (this.config.indestructible) {
+            // Visual feedback for hitting armor/rock
+            // Maybe sparks but no red flash
+            return false;
+        }
+
         this.hp -= amount;
         
         // Flash red

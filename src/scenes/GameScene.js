@@ -25,6 +25,52 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
+        // Generate Asteroid Texture (Grey Rock)
+        if (!this.textures.exists('asteroid')) {
+            const gfx = this.make.graphics({x:0, y:0, add:false});
+            gfx.fillStyle(0x888888, 1);
+            gfx.fillCircle(16, 16, 14);
+            gfx.fillStyle(0x666666, 1);
+            gfx.fillCircle(12, 12, 5); // Crater
+            gfx.fillCircle(20, 20, 4); // Crater
+            gfx.generateTexture('asteroid', 32, 32);
+        }
+
+        // Generate Drone Texture (Cyan Tech)
+        if (!this.textures.exists('drone')) {
+            const gfx = this.make.graphics({x:0, y:0, add:false});
+            gfx.fillStyle(0x00ffff, 1);
+            gfx.fillRect(8, 8, 16, 16);
+            gfx.fillStyle(0x000000, 1);
+            gfx.fillRect(12, 12, 8, 8); // Eye
+            gfx.generateTexture('drone', 32, 32);
+        }
+
+        // Generate Skill Icons
+        const genIcon = (key, color, shape) => {
+            if (!this.textures.exists(key)) {
+                const gfx = this.make.graphics({x:0, y:0, add:false});
+                gfx.fillStyle(0x222222, 1); // Bg
+                gfx.fillRect(0, 0, 32, 32);
+                gfx.lineStyle(2, 0xffffff);
+                gfx.strokeRect(0, 0, 32, 32);
+                
+                gfx.fillStyle(color, 1);
+                if (shape === 'circle') gfx.fillCircle(16, 16, 10);
+                else if (shape === 'rect') gfx.fillRect(8, 8, 16, 16);
+                else if (shape === 'triangle') {
+                    gfx.fillTriangle(16, 6, 6, 26, 26, 26);
+                }
+                gfx.generateTexture(key, 32, 32);
+            }
+        };
+        
+        genIcon('icon_health', 0xff0000, 'circle'); // Heart-ish
+        genIcon('icon_speed', 0x00ff00, 'triangle'); // Up arrow
+        genIcon('icon_weapon', 0xffff00, 'rect'); // Gun
+        genIcon('icon_drone', 0x00ffff, 'rect'); // Drone
+        genIcon('icon_nova', 0xff00ff, 'circle'); // Blast
+
         // Safety Check: Ensure audio assets exist
         const criticalAudio = ['shoot', 'explosion', 'bgm'];
         criticalAudio.forEach(key => {
@@ -538,6 +584,77 @@ export class GameScene extends Phaser.Scene {
         // Init UI
         this.currentXpPercent = 0;
         this.player.emit('xpChanged', 0, CONFIG.XP.BASE_REQ, 1);
+
+        // Skills Button (Top Right)
+        this.skillsBtn = this.add.text(width - 100, 10, 'SKILLS [K]', {
+            ...fontStyle, fontSize: '16px', fill: '#ffff00', backgroundColor: '#333333', padding: { x: 5, y: 5 }
+        }).setScrollFactor(0).setInteractive({ useHandCursor: true }).setResolution(1);
+        
+        this.skillsBtn.on('pointerdown', () => this.toggleSkillsMenu());
+        this.input.keyboard.on('keydown-K', () => this.toggleSkillsMenu());
+
+        this.skillsMenuGroup = this.add.container(0, 0).setScrollFactor(0).setDepth(2001).setVisible(false);
+    }
+
+    toggleSkillsMenu() {
+        if (this.isGameOver) return;
+        
+        const isVisible = this.skillsMenuGroup.visible;
+        if (isVisible) {
+            this.skillsMenuGroup.setVisible(false);
+            if (this.wasPausedBySkills) {
+                this.resumeGame();
+                this.wasPausedBySkills = false;
+            }
+        } else {
+            this.updateSkillsMenu();
+            this.skillsMenuGroup.setVisible(true);
+            if (!this.isPaused) {
+                this.togglePause(true); // Pause but don't show standard pause menu
+                this.wasPausedBySkills = true;
+                this.pauseGroup.setVisible(false); // Hide standard pause text
+            }
+        }
+    }
+
+    updateSkillsMenu() {
+        this.skillsMenuGroup.removeAll(true);
+        const { width, height } = this.scale;
+        
+        // Background
+        const bg = this.add.rectangle(width/2, height/2, width * 0.8, height * 0.8, 0x000000, 0.9)
+            .setStrokeStyle(4, 0x00ffff);
+        this.skillsMenuGroup.add(bg);
+        
+        const title = this.add.text(width/2, height/2 - 200, 'ACQUIRED SKILLS', {
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', fontSize: '32px', fill: '#ffffff'
+        }).setOrigin(0.5).setResolution(1);
+        this.skillsMenuGroup.add(title);
+        
+        // List skills
+        // We need to track acquired skills. Player stats changes are permanent but we don't store "skills list" in player currently.
+        // We should add acquiredSkills array to Player.
+        const skillsList = this.player.acquiredSkills || [];
+        
+        if (skillsList.length === 0) {
+            const noSkills = this.add.text(width/2, height/2, 'NO SKILLS YET', {
+                fontFamily: 'monospace', fontSize: '24px', fill: '#aaaaaa'
+            }).setOrigin(0.5).setResolution(1);
+            this.skillsMenuGroup.add(noSkills);
+        } else {
+            skillsList.forEach((skill, index) => {
+                const y = height/2 - 150 + (index * 40);
+                const skillText = this.add.text(width/2 - 200, y, `> ${skill.name}`, {
+                    fontFamily: 'monospace', fontSize: '20px', fill: '#00ff00'
+                }).setResolution(1);
+                this.skillsMenuGroup.add(skillText);
+            });
+        }
+        
+        const closeText = this.add.text(width/2, height/2 + 200, 'PRESS K TO CLOSE', {
+             fontFamily: 'monospace', fontSize: '16px', fill: '#ffff00'
+        }).setOrigin(0.5).setResolution(1);
+        this.skillsMenuGroup.add(closeText);
     }
 
     resize(gameSize) {
@@ -573,6 +690,8 @@ export class GameScene extends Phaser.Scene {
         if (this.reloadText) this.reloadText.setPosition(width/2, height/2);
         if (this.gameOverText) this.gameOverText.setPosition(width/2, height/2);
         
+        if (this.skillsBtn) this.skillsBtn.setPosition(width - 100, 10);
+
         // XP Bar
         const barY = height - 30;
         if (this.xpBarBg) {
@@ -714,7 +833,12 @@ export class GameScene extends Phaser.Scene {
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         
         const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, this.lang.BOSS_WARNING, { 
-            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', fontSize: '50px', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', 
+            fontSize: '32px', // Reduced from 50px
+            fill: '#ff0000', 
+            stroke: '#ffffff', 
+            strokeThickness: 6,
+            wordWrap: { width: 700, useAdvancedWrap: true }
         }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
         
         this.tweens.add({

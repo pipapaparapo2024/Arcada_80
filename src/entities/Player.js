@@ -1,6 +1,7 @@
 import { CONFIG } from '../utils/Config.js';
 import { Weapon } from './Weapon.js';
 import { Bullet } from './Bullet.js';
+import { Drone } from './Drone.js';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
@@ -32,6 +33,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.weapon = new Weapon(scene, this, 'pistol');
         this.activeAbility = null;
         this.abilityCooldownTimer = 0;
+        this.drones = [];
+        this.acquiredSkills = [];
 
         // Base Stats
         this.stats = {
@@ -124,6 +127,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleShooting(time);
         this.checkDangerZone(delta);
         this.handleAbility(time);
+        
+        // Update Drones
+        this.drones.forEach(drone => drone.update(time, delta));
     }
 
     checkDangerZone(delta) {
@@ -319,6 +325,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.activeAbility = abilityConfig;
     }
     
+    addDrone() {
+        const count = this.drones.length + 1;
+        // Re-position existing drones
+        this.drones.forEach((d, i) => {
+            d.orbitAngle = (Math.PI * 2 / count) * i;
+        });
+        
+        const drone = new Drone(this.scene, this, count - 1, count);
+        this.drones.push(drone);
+    }
+
     onKill() {
         this.stats.kills++;
         if (this.stats.vampirism && this.stats.kills % 5 === 0) {

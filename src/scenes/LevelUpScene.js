@@ -42,14 +42,14 @@ export class LevelUpScene extends Phaser.Scene {
         
         this.skillCards = [];
         skills.forEach((skill, index) => {
-            this.createSkillCard(width / 2, 300 + (index * 150), skill, fontStyle);
+            this.createSkillCard(width / 2, 230 + (index * 110), skill, fontStyle);
         });
 
         this.scale.on('resize', this.resize, this);
     }
 
     createSkillCard(x, y, skill, fontStyle) {
-        const bg = this.add.rectangle(0, 0, 400, 120, 0x333333)
+        const bg = this.add.rectangle(0, 0, 500, 100, 0x333333)
             .setInteractive({ useHandCursor: true });
         
         // Hover effect
@@ -65,29 +65,41 @@ export class LevelUpScene extends Phaser.Scene {
         const name = this.lang[`SKILL_${langKey}`] || skill.name;
         const desc = this.lang[`SKILL_${langKey}_DESC`] || skill.description;
 
+        // Icon (Texture)
+        const iconBg = this.add.rectangle(-200, 0, 64, 64, 0x000000).setStrokeStyle(2, 0xffffff);
+        
+        let iconKey = 'icon_weapon'; // Default
+        if (skill.id.includes('boots') || skill.id.includes('speed')) iconKey = 'icon_speed';
+        else if (skill.id.includes('health') || skill.id.includes('hp')) iconKey = 'icon_health';
+        else if (skill.id.includes('drone')) iconKey = 'icon_drone';
+        else if (skill.id.includes('nova')) iconKey = 'icon_nova';
+        
+        const icon = this.add.image(-200, 0, iconKey).setScale(1.5);
+
         // Text
-        const nameText = this.add.text(0, -20, name, {
+        const nameText = this.add.text(-150, -20, name, {
             ...fontStyle,
             fontSize: '24px',
             fill: '#00ff00',
             fontStyle: 'bold'
-        }).setOrigin(0.5).setResolution(1);
+        }).setOrigin(0, 0.5).setResolution(1);
 
-        const descText = this.add.text(0, 20, desc, {
+        const descText = this.add.text(-150, 20, desc, {
             ...fontStyle,
             fontSize: '18px',
             fill: '#aaaaaa',
             stroke: '#000000',
             strokeThickness: 2
-        }).setOrigin(0.5).setResolution(1);
+        }).setOrigin(0, 0.5).setResolution(1);
 
-        const container = this.add.container(x, y, [bg, nameText, descText]);
+        const container = this.add.container(x, y, [bg, iconBg, icon, nameText, descText]);
         this.skillCards.push(container);
     }
 
     selectSkill(skill) {
         // Apply skill to player
         skill.apply(this.player);
+        this.player.acquiredSkills.push(skill);
         
         // Notify player (optional visual)
         console.log(`Selected skill: ${skill.name}`);
@@ -111,7 +123,7 @@ export class LevelUpScene extends Phaser.Scene {
 
         if (this.skillCards) {
             this.skillCards.forEach((card, index) => {
-                if (card && card.setPosition) card.setPosition(width/2, 300 + (index * 150));
+                if (card && card.setPosition) card.setPosition(width/2, 230 + (index * 110));
             });
         }
     }
