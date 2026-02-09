@@ -23,7 +23,11 @@ export class GameOverScene extends Phaser.Scene {
         const { width, height } = this.scale;
         const lang = Lang[GameState.lang];
         
-        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+        // Ensure level is defined
+        const level = this.level || 1;
+        const score = this.score || 0;
+        
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace' };
 
         // Dark Overlay
         this.add.rectangle(0, 0, width, height, 0x000000, 0.8).setOrigin(0);
@@ -35,9 +39,9 @@ export class GameOverScene extends Phaser.Scene {
 
         // Stats
         const statsText = `
-${lang.SCORE}: ${Math.floor(this.score)}
+${lang.SCORE}: ${Math.floor(score)}
 ${lang.HIGH_SCORE}: ${this.highScore}
-${lang.LEVEL}: ${this.level}
+${lang.LEVEL}: ${level}
         `;
 
         this.add.text(width/2, height/2, statsText, {

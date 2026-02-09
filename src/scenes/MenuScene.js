@@ -31,7 +31,7 @@ export class MenuScene extends Phaser.Scene {
         const centerY = this.cameras.main.centerY;
         const strings = Lang[GameState.lang];
         
-        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace' };
 
         // Background
         this.add.rectangle(0, 0, width, height, 0x111111).setOrigin(0);
@@ -48,35 +48,35 @@ export class MenuScene extends Phaser.Scene {
         }
         this.add.tileSprite(0, 0, width, height, 'scanlines').setOrigin(0).setAlpha(0.1);
 
-        // Title
-        this.add.text(centerX, centerY - 120, 'ARCADA SHOOTER', {
+        // Title (Increased size 1.5x)
+        this.add.text(centerX, centerY - 180, 'ARCADA SHOOTER', {
             ...fontStyle,
-            fontSize: '36px',
+            fontSize: '64px',
             fill: '#ffffff',
             stroke: '#00ffff',
-            strokeThickness: 6
+            strokeThickness: 8
         }).setOrigin(0.5).setResolution(1);
 
         // High Score
-        this.add.text(centerX, centerY - 70, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
+        this.add.text(centerX, centerY - 100, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
             ...fontStyle,
-            fontSize: '15px',
+            fontSize: '32px',
             fill: '#ffff00'
         }).setOrigin(0.5).setResolution(1);
 
         // Difficulty Selection
-        this.add.text(centerX, centerY - 30, strings.SELECT_DIFFICULTY, {
+        this.add.text(centerX, centerY - 40, strings.SELECT_DIFFICULTY, {
             ...fontStyle,
-            fontSize: '12px',
+            fontSize: '24px',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setResolution(1);
 
-        this.createDifficultyButtons(centerX, centerY, fontStyle);
+        this.createDifficultyButtons(centerX, centerY + 10, fontStyle);
 
         // Volume Settings
-        this.volumeText = this.add.text(centerX, centerY + 80, `${strings.VOLUME}: ${GameState.volume}%`, {
+        this.volumeText = this.add.text(centerX, centerY + 100, `${strings.VOLUME}: ${GameState.volume}%`, {
             ...fontStyle,
-            fontSize: '12px',
+            fontSize: '24px',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
@@ -86,9 +86,9 @@ export class MenuScene extends Phaser.Scene {
 
         // Screen Shake Settings
         const shakeText = GameState.screenShake ? 'ON' : 'OFF';
-        this.shakeText = this.add.text(centerX, centerY + 110, `Screen Shake: ${shakeText}`, {
+        this.shakeText = this.add.text(centerX, centerY + 140, `Screen Shake: ${shakeText}`, {
             ...fontStyle,
-            fontSize: '12px',
+            fontSize: '24px',
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
@@ -100,13 +100,13 @@ export class MenuScene extends Phaser.Scene {
         this.shakeText.on('pointerover', () => this.shakeText.setFill('#ffffff'));
         this.shakeText.on('pointerout', () => this.shakeText.setFill('#aaaaaa'));
 
-        // Start Button
-        const startBtn = this.add.rectangle(centerX, centerY + 160, 225, 45, 0x00ff00)
+        // Start Button (Larger and centered)
+        const startBtn = this.add.rectangle(centerX, centerY + 220, 360, 80, 0x00ff00)
             .setInteractive({ useHandCursor: true });
         
-        const startText = this.add.text(centerX, centerY + 160, strings.START_GAME, {
+        const startText = this.add.text(centerX, centerY + 220, strings.START_GAME, {
             ...fontStyle,
-            fontSize: '18px',
+            fontSize: '36px',
             fill: '#000000'
         }).setOrigin(0.5).setResolution(1);
 
@@ -117,9 +117,9 @@ export class MenuScene extends Phaser.Scene {
         // Language Toggle (Bottom Right)
         const langText = GameState.lang.toUpperCase();
         
-        const langBtn = this.add.text(this.cameras.main.width - 60, this.cameras.main.height - 40, langText, {
+        const langBtn = this.add.text(this.scale.width - 80, this.scale.height - 50, langText, {
             ...fontStyle,
-            fontSize: '15px',
+            fontSize: '32px',
             fill: '#ffffff',
             stroke: '#000000',
             strokeThickness: 3
@@ -132,7 +132,7 @@ export class MenuScene extends Phaser.Scene {
 
     createDifficultyButtons(x, y, fontStyle) {
         const diffs = Object.keys(CONFIG.DIFFICULTY);
-        const startY = y + 10;
+        const startY = y; // Centered around Y
         const strings = Lang[GameState.lang];
         
         this.diffButtons = [];
@@ -142,15 +142,15 @@ export class MenuScene extends Phaser.Scene {
             // Default select NORMAL if not already set, or match current state
             const isSelected = (diff.name === GameState.difficulty.name);
             
-            const btnX = x + (index - 1) * 90; // Increased spacing (60 -> 90)
+            const btnX = x + (index - 1) * 140; // Increased spacing
             const btnY = startY;
 
-            const bg = this.add.rectangle(btnX, btnY, 75, 30, isSelected ? 0x00aaaa : 0x333333) // Increased size (50x20 -> 75x30)
+            const bg = this.add.rectangle(btnX, btnY, 120, 50, isSelected ? 0x00aaaa : 0x333333) // Increased size
                 .setInteractive({ useHandCursor: true });
             
             const text = this.add.text(btnX, btnY, strings['DIFF_' + key], {
                 ...fontStyle,
-                fontSize: '12px',
+                fontSize: '18px',
                 fill: '#ffffff'
             }).setOrigin(0.5).setResolution(1);
 

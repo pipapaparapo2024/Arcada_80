@@ -12,7 +12,7 @@ export class LevelUpScene extends Phaser.Scene {
         this.player = data.player;
         const { width, height } = this.scale;
         
-        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace' };
 
         // Semi-transparent overlay with Retro Grid
         this.overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.9).setOrigin(0);

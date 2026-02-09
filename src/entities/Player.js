@@ -124,7 +124,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleShooting(time);
         this.checkDangerZone(delta);
         this.handleAbility(time);
-        this.updateDrones(time);
     }
 
     checkDangerZone(delta) {

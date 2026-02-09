@@ -106,6 +106,10 @@ export class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(-2);
         
+        // Accumulators for smooth pixel movement
+        this.starsBg.trueScrollX = 0;
+        this.starsBg.trueScrollY = 0;
+        
         // Second layer (Nebula/Stars) - Commented out to fix "line in middle" issue and improve performance
         /* 
         this.background = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'background')
@@ -161,7 +165,7 @@ export class GameScene extends Phaser.Scene {
         this.comboTimerEvent = null;
 
         this.comboText = this.add.text(this.scale.width - 20, 100, '', {
-            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"',
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace',
             fontSize: '32px',
             color: '#ff00ff',
             stroke: '#000000',
@@ -393,8 +397,10 @@ export class GameScene extends Phaser.Scene {
         this.trailEmitter.followOffset.set(offX, offY);
         
         // Parallax
-        this.starsBg.tilePositionX = Math.round(this.starsBg.tilePositionX + 0.1);
-        this.starsBg.tilePositionY = Math.round(this.starsBg.tilePositionY + 0.05);
+        this.starsBg.trueScrollX += 0.1;
+        this.starsBg.trueScrollY += 0.05;
+        this.starsBg.tilePositionX = Math.round(this.starsBg.trueScrollX);
+        this.starsBg.tilePositionY = Math.round(this.starsBg.trueScrollY);
         // this.background.tilePositionX += 0.5;
         // this.background.tilePositionY += 0.2;
         
@@ -467,7 +473,7 @@ export class GameScene extends Phaser.Scene {
     createUI() {
         const { width, height } = this.scale;
         
-        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace' };
 
         // Scanlines (CRT Effect)
         this.scanlines = this.add.tileSprite(0, 0, width, height, 'scanlines')
@@ -596,7 +602,7 @@ export class GameScene extends Phaser.Scene {
         // Redraw base bounds
         this.drawWorldBounds();
         
-        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"' };
+        const fontStyle = { fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace' };
 
         if (active) {
             const alpha = 0.5 + Math.sin(this.time.now / 100) * 0.3;
@@ -708,7 +714,7 @@ export class GameScene extends Phaser.Scene {
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         
         const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, this.lang.BOSS_WARNING, { 
-            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', fontSize: '50px', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
+            fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', fontSize: '50px', fill: '#ff0000', stroke: '#ffffff', strokeThickness: 6 
         }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
         
         this.tweens.add({
@@ -758,7 +764,7 @@ export class GameScene extends Phaser.Scene {
             this.player.onKill();
 
             const xpText = this.add.text(enemy.x, enemy.y, `+${CONFIG.XP.ORB_VALUE * this.comboMultiplier}`, {
-                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', fontSize: '20px', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
+                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', fontSize: '20px', fill: '#00ffff', stroke: '#000000', strokeThickness: 2
             }).setOrigin(0.5).setResolution(1);
             
             this.tweens.add({
@@ -826,7 +832,7 @@ export class GameScene extends Phaser.Scene {
             
             // Boss warning
             const text = this.add.text(this.scale.width/2, this.scale.height/2, 'BOSS APPROACHING!', {
-                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P"', 
+                fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', 
                 fontSize: '32px',
                 fill: '#ff0000', 
                 stroke: '#ffffff', 
