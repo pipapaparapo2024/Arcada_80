@@ -12,7 +12,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('GameScene.create started');
+        console.log('GameScene: Start Create');
         // Safety Check: Ensure critical assets exist
         const criticalTextures = ['player', 'bullet', 'enemy_chaser', 'enemy_sprinter', 'background', 'spark', 'fire', 'xp_orb'];
         criticalTextures.forEach(key => {
@@ -297,7 +297,7 @@ export class GameScene extends Phaser.Scene {
             emitting: false
         });
         
-        console.log('GameScene.create complete');
+        console.log('GameScene: Create Finished');
     }
 
     createPauseUI() {
