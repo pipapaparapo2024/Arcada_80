@@ -22,17 +22,17 @@ export class LevelUpScene extends Phaser.Scene {
             .setAlpha(0.5);
 
         // Title
-        this.titleText = this.add.text(width / 2, 100, this.lang.LEVEL_UP, {
+        this.titleText = this.add.text(width / 2, 80, this.lang.LEVEL_UP, {
             ...fontStyle,
-            fontSize: '64px',
+            fontSize: '48px',
             fill: '#ffff00',
             stroke: '#ff0000',
             strokeThickness: 4
         }).setOrigin(0.5).setResolution(1);
 
-        this.subText = this.add.text(width / 2, 180, this.lang.CHOOSE_UPGRADE, {
+        this.subText = this.add.text(width / 2, 150, this.lang.CHOOSE_UPGRADE, {
             ...fontStyle,
-            fontSize: '32px',
+            fontSize: '28px',
             fill: '#ffffff'
         }).setOrigin(0.5).setResolution(1);
 

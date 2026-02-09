@@ -831,7 +831,7 @@ export class GameScene extends Phaser.Scene {
             boss.setScale(3); // Explicitly set scale as requested
             
             // Boss warning
-            const text = this.add.text(this.scale.width/2, this.scale.height/2, 'BOSS APPROACHING!', {
+            const text = this.add.text(this.scale.width/2, this.scale.height/2, this.lang.BOSS_APPROACHING, {
                 fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', 
                 fontSize: '32px',
                 fill: '#ff0000', 
