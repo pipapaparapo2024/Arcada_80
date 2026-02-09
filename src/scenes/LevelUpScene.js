@@ -22,17 +22,17 @@ export class LevelUpScene extends Phaser.Scene {
             .setAlpha(0.5);
 
         // Title
-        this.titleText = this.add.text(width / 2, 80, this.lang.LEVEL_UP, {
+        this.titleText = this.add.text(width / 2, 60, this.lang.LEVEL_UP, {
             ...fontStyle,
-            fontSize: '48px',
+            fontSize: '32px', // Reduced
             fill: '#ffff00',
             stroke: '#ff0000',
-            strokeThickness: 4
+            strokeThickness: 3
         }).setOrigin(0.5).setResolution(1);
 
-        this.subText = this.add.text(width / 2, 150, this.lang.CHOOSE_UPGRADE, {
+        this.subText = this.add.text(width / 2, 110, this.lang.CHOOSE_UPGRADE, {
             ...fontStyle,
-            fontSize: '28px',
+            fontSize: '20px', // Reduced
             fill: '#ffffff'
         }).setOrigin(0.5).setResolution(1);
 
@@ -42,14 +42,14 @@ export class LevelUpScene extends Phaser.Scene {
         
         this.skillCards = [];
         skills.forEach((skill, index) => {
-            this.createSkillCard(width / 2, 230 + (index * 110), skill, fontStyle);
+            this.createSkillCard(width / 2, 180 + (index * 110), skill, fontStyle); // Moved up
         });
 
         this.scale.on('resize', this.resize, this);
     }
 
     createSkillCard(x, y, skill, fontStyle) {
-        const bg = this.add.rectangle(0, 0, 500, 100, 0x333333)
+        const bg = this.add.rectangle(0, 0, 500, 90, 0x333333) // Slightly smaller height
             .setInteractive({ useHandCursor: true });
         
         // Hover effect
@@ -66,7 +66,7 @@ export class LevelUpScene extends Phaser.Scene {
         const desc = this.lang[`SKILL_${langKey}_DESC`] || skill.description;
 
         // Icon (Texture)
-        const iconBg = this.add.rectangle(-200, 0, 64, 64, 0x000000).setStrokeStyle(2, 0xffffff);
+        const iconBg = this.add.rectangle(-200, 0, 56, 56, 0x000000).setStrokeStyle(2, 0xffffff);
         
         let iconKey = 'icon_weapon'; // Default
         if (skill.id.includes('boots') || skill.id.includes('speed')) iconKey = 'icon_speed';
@@ -74,22 +74,23 @@ export class LevelUpScene extends Phaser.Scene {
         else if (skill.id.includes('drone')) iconKey = 'icon_drone';
         else if (skill.id.includes('nova')) iconKey = 'icon_nova';
         
-        const icon = this.add.image(-200, 0, iconKey).setScale(1.5);
+        const icon = this.add.image(-200, 0, iconKey).setScale(1.2); // Adjusted scale
 
         // Text
         const nameText = this.add.text(-150, -20, name, {
             ...fontStyle,
-            fontSize: '24px',
+            fontSize: '20px', // Reduced
             fill: '#00ff00',
             fontStyle: 'bold'
         }).setOrigin(0, 0.5).setResolution(1);
 
         const descText = this.add.text(-150, 20, desc, {
             ...fontStyle,
-            fontSize: '18px',
+            fontSize: '14px', // Reduced
             fill: '#aaaaaa',
             stroke: '#000000',
-            strokeThickness: 2
+            strokeThickness: 2,
+            wordWrap: { width: 320 } // Wrap text
         }).setOrigin(0, 0.5).setResolution(1);
 
         const container = this.add.container(x, y, [bg, iconBg, icon, nameText, descText]);
@@ -118,12 +119,12 @@ export class LevelUpScene extends Phaser.Scene {
             // Grid size update usually needs recreating or just ensuring it covers area.
         }
 
-        if (this.titleText) this.titleText.setPosition(width/2, 100);
-        if (this.subText) this.subText.setPosition(width/2, 180);
+        if (this.titleText) this.titleText.setPosition(width/2, 60);
+        if (this.subText) this.subText.setPosition(width/2, 110);
 
         if (this.skillCards) {
             this.skillCards.forEach((card, index) => {
-                if (card && card.setPosition) card.setPosition(width/2, 230 + (index * 110));
+                if (card && card.setPosition) card.setPosition(width/2, 180 + (index * 110));
             });
         }
     }

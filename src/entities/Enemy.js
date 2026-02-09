@@ -213,6 +213,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     
     explode() {
+        if (this.isDead) return;
+
         // AoE Damage to player
         if (this.scene && this.scene.player) {
             const player = this.scene.player;
@@ -223,7 +225,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             }
         }
         
-        this.takeDamage(this.hp); // Self-destruct
+        this.die(); // Force die which plays sound and particles
+        this.setActive(false);
+        this.setVisible(false);
     }
 
     takeDamage(amount) {
@@ -263,14 +267,20 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
         // Play explosion sound only once
         if (this.scene && this.scene.explosionSound) {
-             this.scene.explosionSound.play({ volume: GameState.volume / 100 });
+             this.scene.explosionSound.play({ volume: GameState.volume / 100, loop: false });
         }
 
         // Spawn particles
         this.createDeathParticles();
         
+        // Disable physics body immediately
+        if (this.body) this.body.enable = false;
+
         // We DO NOT destroy here, we let the Scene handle pooling (setActive/setVisible)
         // based on the return value of takeDamage
+        // But for safety, we can deactivate after a short delay or let the pool manager handle it
+        this.setActive(false);
+        this.setVisible(false);
     }
     
     createDeathParticles() {

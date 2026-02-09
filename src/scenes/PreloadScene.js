@@ -44,14 +44,59 @@ export class PreloadScene extends Phaser.Scene {
         swGfx.strokeCircle(32, 32, 30);
         swGfx.generateTexture('shockwave', 64, 64);
 
-        // Asteroid Texture (Placeholder)
-        const asteroidGfx = this.make.graphics({ x: 0, y: 0, add: false });
-        asteroidGfx.fillStyle(0x888888, 1);
-        asteroidGfx.fillCircle(32, 32, 30);
-        asteroidGfx.fillStyle(0x666666, 1);
-        asteroidGfx.fillCircle(20, 20, 8);
-        asteroidGfx.fillCircle(40, 40, 12);
-        asteroidGfx.generateTexture('asteroid', 64, 64);
+        // Asteroid Texture (Detailed Irregular Rock)
+        if (!this.textures.exists('asteroid')) {
+            const gfx = this.make.graphics({x:0, y:0, add:false});
+            
+            // Base Rock Shape (Irregular Polygon)
+            gfx.fillStyle(0x888888, 1);
+            gfx.beginPath();
+            const points = [
+                {x: 16, y: 2}, {x: 26, y: 6}, {x: 30, y: 16}, {x: 24, y: 28}, 
+                {x: 12, y: 30}, {x: 2, y: 20}, {x: 4, y: 8}
+            ];
+            // Scale points to 64x64 (original was 32x32)
+            gfx.moveTo(points[0].x * 2, points[0].y * 2);
+            points.forEach(p => gfx.lineTo(p.x * 2, p.y * 2));
+            gfx.closePath();
+            gfx.fillPath();
+
+            // Craters/Details
+            gfx.fillStyle(0x666666, 1);
+            gfx.fillCircle(20, 20, 8);
+            gfx.fillCircle(40, 44, 10);
+            gfx.fillCircle(28, 40, 4);
+            
+            // Highlights
+            gfx.fillStyle(0xaaaaaa, 1); 
+            gfx.fillCircle(24, 16, 2);
+            gfx.fillCircle(36, 40, 4);
+
+            gfx.generateTexture('asteroid', 64, 64);
+        }
+
+        // Drone Texture (Futuristic Orb)
+        if (!this.textures.exists('drone')) {
+            const gfx = this.make.graphics({x:0, y:0, add:false});
+            
+            // Outer Glow
+            gfx.fillStyle(0x00ffff, 0.2);
+            gfx.fillCircle(16, 16, 16);
+            
+            // Core Sphere
+            gfx.fillStyle(0x0088ff, 1);
+            gfx.fillCircle(16, 16, 8);
+            
+            // Orbital Ring
+            gfx.lineStyle(2, 0xffffff, 0.8);
+            gfx.strokeCircle(16, 16, 12);
+            
+            // Scanner Eye
+            gfx.fillStyle(0xffffff, 1);
+            gfx.fillCircle(16, 16, 4);
+            
+            gfx.generateTexture('drone', 32, 32);
+        }
 
         // Scanlines Texture
         const scanGfx = this.make.graphics({ x: 0, y: 0, add: false });

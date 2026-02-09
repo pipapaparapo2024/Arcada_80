@@ -129,6 +129,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.handleAbility(time);
         
         // Update Drones
+        this.updateDrones(time, delta);
+    }
+
+    addDrone() {
+        console.log('Adding Drone...');
+        const droneCount = this.drones.length + 1;
+        
+        // Re-create all drones to space them evenly
+        this.drones.forEach(d => d.destroy());
+        this.drones = [];
+        
+        for (let i = 0; i < droneCount; i++) {
+            const drone = new Drone(this.scene, this, i, droneCount);
+            this.drones.push(drone);
+        }
+        console.log(`Drones active: ${this.drones.length}`);
+    }
+    
+    updateDrones(time, delta) {
         this.drones.forEach(drone => drone.update(time, delta));
     }
 

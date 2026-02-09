@@ -25,51 +25,56 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        // Generate Asteroid Texture (Grey Rock)
-        if (!this.textures.exists('asteroid')) {
-            const gfx = this.make.graphics({x:0, y:0, add:false});
-            gfx.fillStyle(0x888888, 1);
-            gfx.fillCircle(16, 16, 14);
-            gfx.fillStyle(0x666666, 1);
-            gfx.fillCircle(12, 12, 5); // Crater
-            gfx.fillCircle(20, 20, 4); // Crater
-            gfx.generateTexture('asteroid', 32, 32);
-        }
-
-        // Generate Drone Texture (Cyan Tech)
-        if (!this.textures.exists('drone')) {
-            const gfx = this.make.graphics({x:0, y:0, add:false});
-            gfx.fillStyle(0x00ffff, 1);
-            gfx.fillRect(8, 8, 16, 16);
-            gfx.fillStyle(0x000000, 1);
-            gfx.fillRect(12, 12, 8, 8); // Eye
-            gfx.generateTexture('drone', 32, 32);
-        }
-
-        // Generate Skill Icons
-        const genIcon = (key, color, shape) => {
+        // Generate Simple Clean Icons (Modern Flat UI)
+        const genIcon = (key, color, type) => {
             if (!this.textures.exists(key)) {
                 const gfx = this.make.graphics({x:0, y:0, add:false});
-                gfx.fillStyle(0x222222, 1); // Bg
-                gfx.fillRect(0, 0, 32, 32);
-                gfx.lineStyle(2, 0xffffff);
-                gfx.strokeRect(0, 0, 32, 32);
                 
+                // Background (Rounded Square, Flat Color, No Border)
                 gfx.fillStyle(color, 1);
-                if (shape === 'circle') gfx.fillCircle(16, 16, 10);
-                else if (shape === 'rect') gfx.fillRect(8, 8, 16, 16);
-                else if (shape === 'triangle') {
-                    gfx.fillTriangle(16, 6, 6, 26, 26, 26);
+                gfx.fillRoundedRect(0, 0, 64, 64, 16);
+                
+                // Icon Shape (Pure White, Geometric)
+                gfx.fillStyle(0xffffff, 1);
+                
+                if (type === 'health') {
+                    // Thick Cross
+                    gfx.fillRect(26, 14, 12, 36);
+                    gfx.fillRect(14, 26, 36, 12);
+                } else if (type === 'speed') {
+                    // Fast Forward Arrows
+                    gfx.beginPath();
+                    gfx.moveTo(14, 14); gfx.lineTo(34, 32); gfx.lineTo(14, 50);
+                    gfx.moveTo(30, 14); gfx.lineTo(50, 32); gfx.lineTo(30, 50);
+                    gfx.fillPath();
+                } else if (type === 'weapon') {
+                    // Simple Gun/Barrel
+                    gfx.fillRect(14, 24, 24, 16); // Grip/Body
+                    gfx.fillRect(38, 28, 16, 8);  // Barrel
+                } else if (type === 'drone') {
+                    // Satellite/Orb
+                    gfx.fillCircle(32, 32, 12);
+                    gfx.lineStyle(4, 0xffffff);
+                    gfx.strokeCircle(32, 32, 22);
+                } else if (type === 'nova') {
+                    // Star Burst
+                    gfx.fillCircle(32, 32, 14);
+                    // 4 Spikes
+                    gfx.beginPath();
+                    gfx.moveTo(32, 10); gfx.lineTo(36, 28); gfx.lineTo(54, 32); gfx.lineTo(36, 36);
+                    gfx.lineTo(32, 54); gfx.lineTo(28, 36); gfx.lineTo(10, 32); gfx.lineTo(28, 28);
+                    gfx.fillPath();
                 }
-                gfx.generateTexture(key, 32, 32);
+                
+                gfx.generateTexture(key, 64, 64);
             }
         };
         
-        genIcon('icon_health', 0xff0000, 'circle'); // Heart-ish
-        genIcon('icon_speed', 0x00ff00, 'triangle'); // Up arrow
-        genIcon('icon_weapon', 0xffff00, 'rect'); // Gun
-        genIcon('icon_drone', 0x00ffff, 'rect'); // Drone
-        genIcon('icon_nova', 0xff00ff, 'circle'); // Blast
+        genIcon('icon_health', 0xff0000, 'health');
+        genIcon('icon_speed', 0x00ff00, 'speed');
+        genIcon('icon_weapon', 0xffff00, 'weapon');
+        genIcon('icon_drone', 0x00ffff, 'drone');
+        genIcon('icon_nova', 0xff00ff, 'nova');
 
         // Safety Check: Ensure audio assets exist
         const criticalAudio = ['shoot', 'explosion', 'bgm'];
@@ -834,11 +839,11 @@ export class GameScene extends Phaser.Scene {
         
         const text = this.add.text(this.scale.width/2, this.scale.height/2 - 100, this.lang.BOSS_WARNING, { 
             fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', 
-            fontSize: '32px', // Reduced from 50px
+            fontSize: '18px', // Reduced from 24px
             fill: '#ff0000', 
             stroke: '#ffffff', 
-            strokeThickness: 6,
-            wordWrap: { width: 700, useAdvancedWrap: true }
+            strokeThickness: 3,
+            wordWrap: { width: 500, useAdvancedWrap: true }
         }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
         
         this.tweens.add({
@@ -957,10 +962,11 @@ export class GameScene extends Phaser.Scene {
             // Boss warning
             const text = this.add.text(this.scale.width/2, this.scale.height/2, this.lang.BOSS_APPROACHING, {
                 fontFamily: '"VMV Sega Genesis", "Kagiraretapikuseru", "Press Start 2P", monospace', 
-                fontSize: '32px',
+                fontSize: '20px', // Reduced from 32px
                 fill: '#ff0000', 
                 stroke: '#ffffff', 
-                strokeThickness: 6
+                strokeThickness: 3,
+                wordWrap: { width: 500, useAdvancedWrap: true }
             }).setOrigin(0.5).setScrollFactor(0).setResolution(1);
             
             // Text effect

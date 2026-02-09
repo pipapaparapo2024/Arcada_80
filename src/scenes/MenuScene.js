@@ -48,35 +48,35 @@ export class MenuScene extends Phaser.Scene {
         }
         this.add.tileSprite(0, 0, width, height, 'scanlines').setOrigin(0).setAlpha(0.1);
 
-        // Title (Increased size 1.5x)
-        this.add.text(centerX, centerY - 180, 'ARCADA SHOOTER', {
+        // Title (Adjusted size)
+        this.add.text(centerX, centerY - 140, 'ARCADA SHOOTER', {
             ...fontStyle,
-            fontSize: '64px',
+            fontSize: '18px', // Further Reduced
             fill: '#ffffff',
             stroke: '#00ffff',
-            strokeThickness: 8
+            strokeThickness: 2
         }).setOrigin(0.5).setResolution(1);
 
         // High Score
         this.add.text(centerX, centerY - 100, `${strings.HIGH_SCORE}: ${GameState.highScore}`, {
             ...fontStyle,
-            fontSize: '32px',
+            fontSize: '10px', // Reduced
             fill: '#ffff00'
         }).setOrigin(0.5).setResolution(1);
 
         // Difficulty Selection
-        this.add.text(centerX, centerY - 40, strings.SELECT_DIFFICULTY, {
+        this.add.text(centerX, centerY - 60, strings.SELECT_DIFFICULTY, {
             ...fontStyle,
-            fontSize: '24px',
+            fontSize: '8px', // Reduced
             fill: '#aaaaaa'
         }).setOrigin(0.5).setResolution(1);
 
-        this.createDifficultyButtons(centerX, centerY + 10, fontStyle);
+        this.createDifficultyButtons(centerX, centerY - 20, fontStyle);
 
         // Volume Settings
-        this.volumeText = this.add.text(centerX, centerY + 100, `${strings.VOLUME}: ${GameState.volume}%`, {
+        this.volumeText = this.add.text(centerX, centerY + 40, `${strings.VOLUME}: ${GameState.volume}%`, {
             ...fontStyle,
-            fontSize: '24px',
+            fontSize: '8px', // Reduced
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
@@ -86,9 +86,9 @@ export class MenuScene extends Phaser.Scene {
 
         // Screen Shake Settings
         const shakeText = GameState.screenShake ? 'ON' : 'OFF';
-        this.shakeText = this.add.text(centerX, centerY + 140, `Screen Shake: ${shakeText}`, {
+        this.shakeText = this.add.text(centerX, centerY + 80, `Screen Shake: ${shakeText}`, {
             ...fontStyle,
-            fontSize: '24px',
+            fontSize: '10px', // Reduced
             fill: '#aaaaaa'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
 
@@ -100,13 +100,13 @@ export class MenuScene extends Phaser.Scene {
         this.shakeText.on('pointerover', () => this.shakeText.setFill('#ffffff'));
         this.shakeText.on('pointerout', () => this.shakeText.setFill('#aaaaaa'));
 
-        // Start Button (Larger and centered)
-        const startBtn = this.add.rectangle(centerX, centerY + 220, 360, 80, 0x00ff00)
+        // Start Button (Smaller and centered)
+        const startBtn = this.add.rectangle(centerX, centerY + 140, 160, 35, 0x00ff00) // Reduced size
             .setInteractive({ useHandCursor: true });
         
-        const startText = this.add.text(centerX, centerY + 220, strings.START_GAME, {
+        const startText = this.add.text(centerX, centerY + 140, strings.START_GAME, {
             ...fontStyle,
-            fontSize: '36px',
+            fontSize: '14px', // Reduced
             fill: '#000000'
         }).setOrigin(0.5).setResolution(1);
 
@@ -117,12 +117,12 @@ export class MenuScene extends Phaser.Scene {
         // Language Toggle (Bottom Right)
         const langText = GameState.lang.toUpperCase();
         
-        const langBtn = this.add.text(this.scale.width - 80, this.scale.height - 50, langText, {
+        const langBtn = this.add.text(this.scale.width - 20, this.scale.height - 20, langText, {
             ...fontStyle,
-            fontSize: '32px',
+            fontSize: '14px', // Reduced
             fill: '#ffffff',
             stroke: '#000000',
-            strokeThickness: 3
+            strokeThickness: 2
         }).setOrigin(1, 1).setInteractive({ useHandCursor: true }).setResolution(1);
 
         langBtn.on('pointerdown', () => this.toggleLang());
