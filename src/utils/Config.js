@@ -165,6 +165,12 @@ export const CONFIG = {
         BASE_REQ: 100,
         GROWTH_FACTOR: 1.2,
         ORB_VALUE: 20
+    },
+
+    META_UPGRADES: {
+        XP_BOOST: { id: 'xp_boost', baseCost: 100, costStep: 75, maxLevel: 5, valuePerLevel: 0.05 },
+        DAMAGE_BOOST: { id: 'damage_boost', baseCost: 120, costStep: 90, maxLevel: 5, valuePerLevel: 0.05 },
+        START_ARMOR: { id: 'start_armor', baseCost: 150, costStep: 120, maxLevel: 3, valuePerLevel: 10 }
     }
 };
 
@@ -175,6 +181,8 @@ export const GameState = {
     volume: localStorage.getItem('arcade_volume') !== null ? parseInt(localStorage.getItem('arcade_volume')) : 100,
     lang: localStorage.getItem('arcade_lang') || 'en',
     screenShake: localStorage.getItem('arcade_shake') !== 'false', // Default true
+    credits: parseInt(localStorage.getItem('arcade_credits')) || 0,
+    metaUpgrades: JSON.parse(localStorage.getItem('arcade_meta_upgrades') || '{}'),
 
     saveDifficulty(diff) {
         this.difficulty = diff;
@@ -197,5 +205,37 @@ export const GameState = {
     saveShake(enabled) {
         this.screenShake = enabled;
         localStorage.setItem('arcade_shake', enabled);
+    },
+    saveCredits(value) {
+        this.credits = Math.max(0, Math.floor(value));
+        localStorage.setItem('arcade_credits', this.credits);
+    },
+    addCredits(amount) {
+        this.saveCredits(this.credits + Math.max(0, Math.floor(amount)));
+    },
+    getUpgradeLevel(id) {
+        return this.metaUpgrades[id] || 0;
+    },
+    getUpgradeCost(id) {
+        const cfg = Object.values(CONFIG.META_UPGRADES).find(u => u.id === id);
+        if (!cfg) return Number.MAX_SAFE_INTEGER;
+        const level = this.getUpgradeLevel(id);
+        if (level >= cfg.maxLevel) return Number.POSITIVE_INFINITY;
+        return cfg.baseCost + (level * cfg.costStep);
+    },
+    buyUpgrade(id) {
+        const cfg = Object.values(CONFIG.META_UPGRADES).find(u => u.id === id);
+        if (!cfg) return false;
+
+        const level = this.getUpgradeLevel(id);
+        if (level >= cfg.maxLevel) return false;
+
+        const cost = this.getUpgradeCost(id);
+        if (this.credits < cost) return false;
+
+        this.saveCredits(this.credits - cost);
+        this.metaUpgrades[id] = level + 1;
+        localStorage.setItem('arcade_meta_upgrades', JSON.stringify(this.metaUpgrades));
+        return true;
     }
 };

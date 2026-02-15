@@ -110,22 +110,6 @@ export class GameScene extends Phaser.Scene {
                 .setAlpha(0.5);
 
             // Vignette (simple radial gradient overlay)
-        if (!this.textures.exists('vignette')) {
-            const vig = this.make.graphics({x:0, y:0, add: false});
-            vig.fillStyle(0x000000, 1);
-            vig.fillRect(0,0,800,600);
-            const texture = vig.generateTexture('vignette_base', 800, 600);
-        }
-        
-        // Add Vignette Overlay using an image with a mask or just a dark border
-        // Since we can't easily make a radial gradient texture without canvas manipulation,
-        // we'll use a "hole" approach with a big thick border
-        const vignette = this.add.graphics();
-        vignette.setScrollFactor(0).setDepth(999);
-        vignette.fillStyle(0x000000, 0.3);
-        // Draw 4 rectangles to form a frame? Or just one big rect with low alpha?
-        // User wants "vignetting in corners". 
-        // Let's try to make a radial texture on the fly
         if (!this.textures.exists('vignette_texture')) {
             const canvas = this.textures.createCanvas('vignette_texture', 800, 600);
             const ctx = canvas.context;
@@ -136,7 +120,11 @@ export class GameScene extends Phaser.Scene {
             ctx.fillRect(0, 0, 800, 600);
             canvas.refresh();
         }
-        this.add.image(400, 300, 'vignette_texture').setScrollFactor(0).setDepth(999).setAlpha(0.6);
+        this.vignetteImage = this.add.image(this.scale.width / 2, this.scale.height / 2, 'vignette_texture')
+            .setScrollFactor(0)
+            .setDepth(999)
+            .setAlpha(0.6)
+            .setDisplaySize(this.scale.width, this.scale.height);
         }
 
         // HUD Container
@@ -173,6 +161,17 @@ export class GameScene extends Phaser.Scene {
         
         // Player
         this.player = new Player(this, CONFIG.GAME_WIDTH/2, CONFIG.GAME_HEIGHT/2);
+
+        // Meta upgrades
+        const xpBoostLevel = GameState.getUpgradeLevel('xp_boost');
+        const dmgBoostLevel = GameState.getUpgradeLevel('damage_boost');
+        const armorLevel = GameState.getUpgradeLevel('start_armor');
+
+        this.player.xpGainMultiplier = 1 + (xpBoostLevel * CONFIG.META_UPGRADES.XP_BOOST.valuePerLevel);
+        this.player.baseDamageMultiplier = 1 + (dmgBoostLevel * CONFIG.META_UPGRADES.DAMAGE_BOOST.valuePerLevel);
+        this.player.damageMultiplier = this.player.baseDamageMultiplier;
+        this.player.maxHp += armorLevel * CONFIG.META_UPGRADES.START_ARMOR.valuePerLevel;
+        this.player.hp = this.player.maxHp;
         
         // Danger Zone Warning Overlay
         this.dangerOverlay = this.add.graphics();
@@ -276,6 +275,8 @@ export class GameScene extends Phaser.Scene {
         this.baseEnemySpeedMultiplier = this.difficulty.speedMult;
         this.currentEnemySpeedMultiplier = this.baseEnemySpeedMultiplier;
         this.difficultyTimer = 0;
+        this.waveTimer = 0;
+        this.waveIndex = 1;
 
         // Enemy Spawn Timer
         this.spawnEvent = this.time.addEvent({
@@ -301,15 +302,24 @@ export class GameScene extends Phaser.Scene {
 
         // Keyboard & Input
         this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-        this.input.keyboard.on('keydown-ESC', () => this.togglePause());
-        this.game.events.on('blur', () => this.togglePause(true));
+        this.handleEscKey = () => this.togglePause();
+        this.handleGameBlur = () => this.togglePause(true);
+        this.handleSceneResume = () => this.input.keyboard.resetKeys();
+
+        this.input.keyboard.on('keydown-ESC', this.handleEscKey);
+        this.game.events.on('blur', this.handleGameBlur);
         
         // Events
-        this.events.on('resume', () => {
-            this.input.keyboard.resetKeys();
-        });
+        this.events.on('resume', this.handleSceneResume);
         
-        // this.scale.on('resize', this.resize, this);
+        this.scale.on('resize', this.resize, this);
+        this.events.once('shutdown', () => {
+            this.physics.world.off('worldbounds', this.handleBulletHitWorld, this);
+            this.scale.off('resize', this.resize, this);
+            this.input.keyboard.off('keydown-ESC', this.handleEscKey);
+            this.game.events.off('blur', this.handleGameBlur);
+            this.events.off('resume', this.handleSceneResume);
+        });
 
         // Sound Effects (Safe Volume)
         const vol = (GameState.volume || 0) / 100;
@@ -460,6 +470,12 @@ export class GameScene extends Phaser.Scene {
         if (this.difficultyTimer >= 30000) {
             this.increaseDifficulty();
             this.difficultyTimer = 0;
+        }
+
+        this.waveTimer += delta;
+        if (this.waveTimer >= 45000) {
+            this.waveIndex++;
+            this.waveTimer = 0;
         }
         
         // Boss Spawn Logic (Every 5 Levels)
@@ -670,12 +686,17 @@ export class GameScene extends Phaser.Scene {
 
         // Scanlines
         if (this.scanlines) this.scanlines.setSize(width, height);
+
+        // Vignette overlay
+        if (this.vignetteImage) {
+            this.vignetteImage.setPosition(width / 2, height / 2).setDisplaySize(width, height);
+        }
         
         // Noise Overlay
         if (this.noiseOverlay) this.noiseOverlay.setSize(width, height);
 
         // Backgrounds
-        this.starsBg.setPosition(width/2, height/2).setSize(width, height);
+        this.starsBg.setPosition(0, 0).setSize(width, height);
         // this.background.setPosition(width/2, height/2).setSize(width, height);
         
         // Danger Zone
@@ -807,15 +828,27 @@ export class GameScene extends Phaser.Scene {
                 case 3: x = cam.worldView.x - padding; y = Phaser.Math.Between(cam.worldView.y, cam.worldView.bottom); break;
             }
 
-            const type = (Math.random() < 0.3) ? 'SPRINTER' : 'CHASER';
-            // Random type based on difficulty/time?
-            // Let's mix it up
             const rand = Math.random();
             let enemyType = 'CHASER';
-            if (rand < 0.2) enemyType = 'SPRINTER';
-            else if (rand < 0.35) enemyType = 'SHOOTER';
-            else if (rand < 0.45) enemyType = 'KAMIKAZE';
-            else if (rand < 0.50) enemyType = 'ASTEROID';
+
+            if (this.waveIndex <= 2) {
+                enemyType = rand < 0.3 ? 'SPRINTER' : 'CHASER';
+            } else if (this.waveIndex <= 4) {
+                if (rand < 0.25) enemyType = 'SPRINTER';
+                else if (rand < 0.45) enemyType = 'SHOOTER';
+                else enemyType = 'CHASER';
+            } else if (this.waveIndex <= 6) {
+                if (rand < 0.25) enemyType = 'SPRINTER';
+                else if (rand < 0.45) enemyType = 'SHOOTER';
+                else if (rand < 0.6) enemyType = 'KAMIKAZE';
+                else enemyType = 'CHASER';
+            } else {
+                if (rand < 0.2) enemyType = 'SPRINTER';
+                else if (rand < 0.4) enemyType = 'SHOOTER';
+                else if (rand < 0.6) enemyType = 'KAMIKAZE';
+                else if (rand < 0.72) enemyType = 'ASTEROID';
+                else enemyType = 'CHASER';
+            }
             
             enemy.spawn(x, y, enemyType, this.currentEnemySpeedMultiplier);
             
@@ -1078,7 +1111,8 @@ export class GameScene extends Phaser.Scene {
         this.scene.start('GameOverScene', { 
             score: this.score, 
             highscore: GameState.highScore, 
-            level: this.player ? this.player.level : 1 
+            level: this.player ? this.player.level : 1,
+            wave: this.waveIndex
         });
     }
 

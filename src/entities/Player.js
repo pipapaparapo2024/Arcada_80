@@ -45,7 +45,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             kills: 0
         };
         
-        this.damageMultiplier = 1;
+        this.baseDamageMultiplier = 1;
+        this.damageMultiplier = this.baseDamageMultiplier;
+        this.xpGainMultiplier = 1;
 
         // State
         this.hp = CONFIG.PLAYER.HP;
@@ -319,7 +321,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     
     gainXp(amount) {
-        this.xp += amount;
+        this.xp += Math.floor(amount * this.xpGainMultiplier);
         
         if (this.xp >= this.xpToNextLevel) {
             this.levelUp();

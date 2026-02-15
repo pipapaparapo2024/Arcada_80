@@ -1,4 +1,4 @@
-import { GameState } from '../utils/Config.js';
+import { CONFIG, GameState } from '../utils/Config.js';
 import { Bullet } from './Bullet.js';
 
 export const ENEMY_TYPES = {
@@ -76,6 +76,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.currentSpeed = config.speed;
         this.isKnockedBack = false;
         this.shootTimer = 0;
+        this.phase = 1;
         
         // Apply scale
         if (config.scale) {
@@ -108,6 +109,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.baseSpeed = this.config.speed;
         this.currentSpeed = this.baseSpeed * speedMultiplier;
         this.shootTimer = 0;
+        this.phase = 1;
         
         if (this.config.scale) {
             this.setScale(this.config.scale);
@@ -147,6 +149,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         if (!this.active) return;
         
         if (this.config.boss) {
+            const hpRatio = this.hp / this.config.hp;
+            this.phase = hpRatio <= 0.33 ? 3 : hpRatio <= 0.66 ? 2 : 1;
+
             // Boss Logic: Zigzag from top
             this.y += this.currentSpeed * delta * 0.001; // Move down slowly
             this.x += Math.sin(time * 0.002) * 2; // Zigzag
@@ -185,14 +190,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
     
     shoot(time) {
-        this.shootTimer = time + this.config.fireRate;
+        const bossFireRate = this.phase === 3 ? 700 : this.phase === 2 ? 1000 : this.config.fireRate;
+        this.shootTimer = time + bossFireRate;
         
         // Create bullet (Scene must handle bullet group)
         if (this.scene.enemyBullets) {
             if (this.config.boss) {
-                // Fan Shot (3 bullets)
-                // -15, 0, 15 degrees in radians: -0.26, 0, 0.26
-                const angles = [-0.26, 0, 0.26]; 
+                const angles = this.phase === 3
+                    ? [-0.52, -0.26, 0, 0.26, 0.52]
+                    : this.phase === 2
+                        ? [-0.35, 0, 0.35]
+                        : [-0.26, 0, 0.26];
                 const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, this.target.x, this.target.y);
                 
                 angles.forEach(offset => {
