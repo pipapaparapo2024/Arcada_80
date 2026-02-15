@@ -46,6 +46,9 @@ export class LevelUpScene extends Phaser.Scene {
         });
 
         this.scale.on('resize', this.resize, this);
+        this.events.once('shutdown', () => {
+            this.scale.off('resize', this.resize, this);
+        });
     }
 
     createSkillCard(x, y, skill, fontStyle) {

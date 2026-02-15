@@ -88,7 +88,7 @@ export class Powerup extends Phaser.Physics.Arcade.Sprite {
                 player.damageMultiplier = 2;
                 player.setTint(0xff0000); // Visual indicator
                 this.scene.time.delayedCall(this.config.duration, () => {
-                    player.damageMultiplier = 1;
+                    player.damageMultiplier = player.baseDamageMultiplier || 1;
                     player.clearTint();
                 });
                 break;

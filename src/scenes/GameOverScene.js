@@ -10,6 +10,7 @@ export class GameOverScene extends Phaser.Scene {
         console.log('GameOver Data:', data);
         this.score = data.score || 0;
         this.level = data.level || 1;
+        this.wave = data.wave || 1;
         this.highScore = data.highscore || GameState.highScore;
         this.newHighScore = this.score > GameState.highScore;
         
@@ -17,6 +18,10 @@ export class GameOverScene extends Phaser.Scene {
             GameState.saveHighScore(this.score);
             this.highScore = this.score;
         }
+
+        const earnedCredits = Math.max(10, Math.floor(this.score / 50) + (this.level * 10));
+        GameState.addCredits(earnedCredits);
+        this.earnedCredits = earnedCredits;
     }
 
     create() {
@@ -42,6 +47,8 @@ export class GameOverScene extends Phaser.Scene {
 ${lang.SCORE}: ${Math.floor(score)}
 ${lang.HIGH_SCORE}: ${this.highScore}
 ${lang.LEVEL}: ${level}
+Wave: ${this.wave}
+Credits +${this.earnedCredits}
         `;
 
         this.add.text(width/2, height/2, statsText, {

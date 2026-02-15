@@ -8,7 +8,10 @@ export class MenuScene extends Phaser.Scene {
 
     create() {
         this.createUI();
-        // this.scale.on('resize', this.resize, this);
+        this.scale.on('resize', this.resize, this);
+        this.events.once('shutdown', () => {
+            this.scale.off('resize', this.resize, this);
+        });
 
         // Audio Context Unlock
         this.input.once('pointerdown', () => {
@@ -19,12 +22,12 @@ export class MenuScene extends Phaser.Scene {
     }
 
     resize(gameSize) {
-        // this.createUI();
+        this.createUI();
     }
 
     createUI() {
         // Clear existing UI
-        this.children.removeAll();
+        this.children.removeAll(true);
 
         const { width, height } = this.scale;
         const centerX = this.cameras.main.centerX;
@@ -100,11 +103,20 @@ export class MenuScene extends Phaser.Scene {
         this.shakeText.on('pointerover', () => this.shakeText.setFill('#ffffff'));
         this.shakeText.on('pointerout', () => this.shakeText.setFill('#aaaaaa'));
 
+        const creditsLabel = GameState.lang === 'ru' ? 'Кредиты' : 'Credits';
+        this.creditsText = this.add.text(centerX, centerY + 110, `${creditsLabel}: ${GameState.credits}`, {
+            ...fontStyle,
+            fontSize: '10px',
+            fill: '#00ffff'
+        }).setOrigin(0.5).setResolution(1);
+
+        this.createMetaUpgradeButtons(centerX, centerY + 145, fontStyle);
+
         // Start Button (Smaller and centered)
-        const startBtn = this.add.rectangle(centerX, centerY + 140, 160, 35, 0x00ff00) // Reduced size
+        const startBtn = this.add.rectangle(centerX, centerY + 250, 160, 35, 0x00ff00) // Reduced size
             .setInteractive({ useHandCursor: true });
         
-        const startText = this.add.text(centerX, centerY + 140, strings.START_GAME, {
+        const startText = this.add.text(centerX, centerY + 250, strings.START_GAME, {
             ...fontStyle,
             fontSize: '14px', // Reduced
             fill: '#000000'
@@ -128,6 +140,37 @@ export class MenuScene extends Phaser.Scene {
         langBtn.on('pointerdown', () => this.toggleLang());
         langBtn.on('pointerover', () => langBtn.setFill('#ffff00'));
         langBtn.on('pointerout', () => langBtn.setFill('#ffffff'));
+    }
+
+    createMetaUpgradeButtons(x, startY, fontStyle) {
+        const defs = [
+            { id: 'xp_boost', label: GameState.lang === 'ru' ? 'XP БУСТ' : 'XP BOOST' },
+            { id: 'damage_boost', label: GameState.lang === 'ru' ? 'УРОН +' : 'DMG +' },
+            { id: 'start_armor', label: GameState.lang === 'ru' ? 'СТАРТ HP' : 'START HP' }
+        ];
+
+        defs.forEach((def, index) => {
+            const y = startY + (index * 28);
+            const level = GameState.getUpgradeLevel(def.id);
+            const cost = GameState.getUpgradeCost(def.id);
+            const isMaxed = !Number.isFinite(cost);
+            const text = isMaxed
+                ? `${def.label} Lv.${level} MAX`
+                : `${def.label} Lv.${level} [${cost}]`;
+
+            const btn = this.add.text(x, y, text, {
+                ...fontStyle,
+                fontSize: '10px',
+                fill: '#ffffff',
+                backgroundColor: '#333333',
+                padding: { x: 6, y: 4 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setResolution(1);
+
+            btn.on('pointerdown', () => {
+                const purchased = GameState.buyUpgrade(def.id);
+                if (purchased) this.createUI();
+            });
+        });
     }
 
     createDifficultyButtons(x, y, fontStyle) {
